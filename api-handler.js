@@ -6,6 +6,54 @@ class MovieAPIHandler {
     constructor() {
         this.cache = new Map();
         this.apiAvailable = true;
+        this.cacheExpiration = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
+        this.cacheKey = 'omdb_movie_cache';
+        this.loadCacheFromStorage();
+    }
+
+    // Load cache from localStorage
+    loadCacheFromStorage() {
+        try {
+            const storedCache = localStorage.getItem(this.cacheKey);
+            if (storedCache) {
+                const { data, timestamp } = JSON.parse(storedCache);
+                const now = Date.now();
+                
+                // Check if cache is still valid
+                if (now - timestamp < this.cacheExpiration) {
+                    console.log('📦 Loading cached data from localStorage...');
+                    Object.entries(data).forEach(([key, value]) => {
+                        this.cache.set(key, value);
+                    });
+                    console.log(`✅ Loaded ${this.cache.size} items from cache`);
+                } else {
+                    console.log('⏰ Cache expired, will fetch fresh data');
+                    localStorage.removeItem(this.cacheKey);
+                }
+            }
+        } catch (error) {
+            console.warn('⚠️ Failed to load cache from storage:', error.message);
+        }
+    }
+
+    // Save cache to localStorage
+    saveCacheToStorage() {
+        try {
+            const cacheData = {};
+            this.cache.forEach((value, key) => {
+                cacheData[key] = value;
+            });
+            
+            const cacheObject = {
+                data: cacheData,
+                timestamp: Date.now()
+            };
+            
+            localStorage.setItem(this.cacheKey, JSON.stringify(cacheObject));
+            console.log(`💾 Saved ${this.cache.size} items to localStorage cache`);
+        } catch (error) {
+            console.warn('⚠️ Failed to save cache to storage:', error.message);
+        }
     }
 
     // Fetch movie data from OMDB API by title
@@ -183,12 +231,22 @@ class MovieAPIHandler {
 
     // Fetch all movies with progress tracking
     async getAllMovies(localMovies, onProgress) {
-        const enrichedMovies = [];
+        // Check if all movies are already cached
+        const allCached = localMovies.every(movie => this.cache.has(`movie-${movie.id}`));
         
+        if (allCached) {
+            console.log('⚡ All movies found in cache, loading instantly...');
+            const enrichedMovies = localMovies.map(movie => this.cache.get(`movie-${movie.id}`));
+            console.log(`✅ Loaded ${enrichedMovies.length} movies from cache`);
+            return enrichedMovies;
+        }
+        
+        const enrichedMovies = [];
         console.log(`📊 Starting to fetch ${localMovies.length} movies from OMDB...`);
         
         for (let i = 0; i < localMovies.length; i++) {
             try {
+                const wasCached = this.cache.has(`movie-${localMovies[i].id}`);
                 const movie = await this.getMovie(localMovies[i]);
                 enrichedMovies.push(movie);
                 
@@ -196,8 +254,10 @@ class MovieAPIHandler {
                     onProgress(i + 1, localMovies.length, 'movies');
                 }
                 
-                // Small delay to avoid rate limiting
-                await this.delay(200);
+                // Only delay if we made an API request (not cached)
+                if (!wasCached) {
+                    await this.delay(200);
+                }
             } catch (error) {
                 console.error(`❌ Error fetching movie ${localMovies[i].title}:`, error);
                 // Use local data as fallback
@@ -206,17 +266,31 @@ class MovieAPIHandler {
         }
         
         console.log(`✅ Finished fetching ${enrichedMovies.length} movies`);
+        
+        // Save cache to localStorage
+        this.saveCacheToStorage();
+        
         return enrichedMovies;
     }
 
     // Fetch all TV shows with progress tracking
     async getAllTVShows(localShows, onProgress) {
-        const enrichedShows = [];
+        // Check if all TV shows are already cached
+        const allCached = localShows.every(show => this.cache.has(`tv-${show.id}`));
         
+        if (allCached) {
+            console.log('⚡ All TV shows found in cache, loading instantly...');
+            const enrichedShows = localShows.map(show => this.cache.get(`tv-${show.id}`));
+            console.log(`✅ Loaded ${enrichedShows.length} TV shows from cache`);
+            return enrichedShows;
+        }
+        
+        const enrichedShows = [];
         console.log(`📊 Starting to fetch ${localShows.length} TV shows from OMDB...`);
         
         for (let i = 0; i < localShows.length; i++) {
             try {
+                const wasCached = this.cache.has(`tv-${localShows[i].id}`);
                 const show = await this.getTVShow(localShows[i]);
                 enrichedShows.push(show);
                 
@@ -224,8 +298,10 @@ class MovieAPIHandler {
                     onProgress(i + 1, localShows.length, 'tvShows');
                 }
                 
-                // Small delay to avoid rate limiting
-                await this.delay(200);
+                // Only delay if we made an API request (not cached)
+                if (!wasCached) {
+                    await this.delay(200);
+                }
             } catch (error) {
                 console.error(`❌ Error fetching TV show ${localShows[i].title}:`, error);
                 // Use local data as fallback
@@ -234,6 +310,10 @@ class MovieAPIHandler {
         }
         
         console.log(`✅ Finished fetching ${enrichedShows.length} TV shows`);
+        
+        // Save cache to localStorage
+        this.saveCacheToStorage();
+        
         return enrichedShows;
     }
 
