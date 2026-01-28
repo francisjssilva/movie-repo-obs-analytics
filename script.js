@@ -183,26 +183,52 @@ document.addEventListener('DOMContentLoaded', function() {
         if (searchTerm) {
             const allCards = document.querySelectorAll('.card');
             let foundCount = 0;
+            let foundInMovies = 0;
+            let foundInTVShows = 0;
             
             allCards.forEach(card => {
                 const title = card.querySelector('.card-title').textContent.toLowerCase();
                 const description = card.querySelector('.card-description').textContent.toLowerCase();
                 const genre = card.querySelector('.genre').textContent.toLowerCase();
+                const type = card.getAttribute('data-type');
                 
                 if (title.includes(searchTerm) || description.includes(searchTerm) || genre.includes(searchTerm)) {
                     card.style.display = 'block';
                     card.style.animation = 'fadeIn 0.5s ease';
                     foundCount++;
+                    
+                    // Track which tab has results
+                    if (type === 'movie') {
+                        foundInMovies++;
+                    } else if (type === 'tvshow') {
+                        foundInTVShows++;
+                    }
                 } else {
                     card.style.display = 'none';
                 }
             });
 
+            // Auto-switch to the tab with results
+            if (foundCount > 0) {
+                if (foundInMovies > 0 && foundInTVShows === 0) {
+                    // Only movies found, switch to movies tab
+                    switchToTab('movies');
+                } else if (foundInTVShows > 0 && foundInMovies === 0) {
+                    // Only TV shows found, switch to TV shows tab
+                    switchToTab('tv-shows');
+                }
+                // If both have results, stay on current tab
+            }
+
             // Show notification
             if (foundCount === 0) {
                 showNotification(`No results found for "${searchTerm}"`);
             } else {
-                showNotification(`Found ${foundCount} result(s) for "${searchTerm}"`);
+                let message = `Found ${foundCount} result(s) for "${searchTerm}"`;
+                if (foundInMovies > 0 && foundInTVShows > 0) {
+                    message += ` (${foundInMovies} movies, ${foundInTVShows} TV shows)`;
+                }
+                showNotification(message);
             }
         } else {
             // Show all cards if search is empty
@@ -210,6 +236,25 @@ document.addEventListener('DOMContentLoaded', function() {
             allCards.forEach(card => {
                 card.style.display = 'block';
             });
+        }
+    }
+
+    // Helper function to switch tabs
+    function switchToTab(tabId) {
+        const tabButtons = document.querySelectorAll('.tab-btn');
+        const tabContents = document.querySelectorAll('.tab-content');
+        
+        // Remove active class from all
+        tabButtons.forEach(btn => btn.classList.remove('active'));
+        tabContents.forEach(content => content.classList.remove('active'));
+        
+        // Add active class to target
+        const targetBtn = document.querySelector(`[data-tab="${tabId}"]`);
+        const targetContent = document.getElementById(tabId);
+        
+        if (targetBtn && targetContent) {
+            targetBtn.classList.add('active');
+            targetContent.classList.add('active');
         }
     }
 
