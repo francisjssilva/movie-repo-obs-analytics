@@ -1572,3 +1572,59 @@ button, .card, .tab-btn, .watched-btn, .trailer-btn {
         padding: 30px 20px;
     }
 }
+
+/* Toggle Switch for Favorites Filter */
+.toggle-switch {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    cursor: pointer;
+    user-select: none;
+}
+
+.toggle-switch input[type="checkbox"] {
+    display: none;
+}
+
+.toggle-slider {
+    position: relative;
+    width: 50px;
+    height: 26px;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 13px;
+    transition: all 0.3s ease;
+    flex-shrink: 0;
+}
+
+.toggle-slider::before {
+    content: '';
+    position: absolute;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: white;
+    top: 2px;
+    left: 2px;
+    transition: all 0.3s ease;
+}
+
+.toggle-switch input[type="checkbox"]:checked + .toggle-slider {
+    background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%);
+}
+
+.toggle-switch input[type="checkbox"]:checked + .toggle-slider::before {
+    transform: translateX(24px);
+}
+
+.toggle-label {
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 14px;
+}
+
+.toggle-switch:hover .toggle-slider {
+    background: rgba(255, 255, 255, 0.3);
+}
+
+.toggle-switch input[type="checkbox"]:checked + .toggle-slider:hover {
+    background: linear-gradient(135deg, #ff7b7b 0%, #fe6a7f 100%);
+}

@@ -78,13 +78,22 @@
                         </div>
                     </div>
 
-                    <div class="filter-section">
+                    <div class="filter-section" id="watched-filter-section" style="display: none;">
                         <label for="watched-filter" class="filter-label">👁️ Status</label>
                         <select id="watched-filter" class="filter-select">
                             <option value="all">All</option>
                             <option value="watched">Watched</option>
                             <option value="unwatched">Not Watched</option>
                         </select>
+                    </div>
+
+                    <div class="filter-section" id="favorites-filter-section" style="display: none;">
+                        <label class="filter-label">❤️ Favorites</label>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="favorites-filter">
+                            <span class="toggle-slider"></span>
+                            <span class="toggle-label">Show Only Favorites</span>
+                        </label>
                     </div>
 
                     <div class="filter-section">

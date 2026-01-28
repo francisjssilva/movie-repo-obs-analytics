@@ -124,8 +124,11 @@ class AuthService {
     // Add movie to user's favorites
     async addToFavorites(movieId, movieData) {
         if (!this.isAuthenticated()) {
+            console.error('❌ Not authenticated - cannot add to favorites');
             return { success: false, error: 'Not authenticated' };
         }
+
+        console.log('📝 Adding to favorites:', { userId: this.currentUser.id, movieId, movieData });
 
         try {
             const { data, error } = await this.supabase
@@ -191,8 +194,11 @@ class AuthService {
     // Add item to user's watched list
     async addToWatched(itemId, itemType, itemData) {
         if (!this.isAuthenticated()) {
+            console.error('❌ Not authenticated - cannot add to watched');
             return { success: false, error: 'Not authenticated' };
         }
+
+        console.log('📝 Adding to watched:', { userId: this.currentUser.id, itemId, itemType, itemData });
 
         try {
             const { data, error } = await this.supabase

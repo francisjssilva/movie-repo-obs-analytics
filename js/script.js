@@ -12,6 +12,11 @@ document.addEventListener('DOMContentLoaded', function() {
     let allMovies = [];
     let allTVShows = [];
 
+    // Filter elements (need to be accessible throughout)
+    const favoritesFilter = document.getElementById('favorites-filter');
+    const favoritesFilterSection = document.getElementById('favorites-filter-section');
+    const watchedFilterSection = document.getElementById('watched-filter-section');
+
     // Auth UI elements
     const authBtn = document.getElementById('auth-btn');
     const userMenu = document.getElementById('user-menu');
@@ -133,10 +138,16 @@ document.addEventListener('DOMContentLoaded', function() {
             authBtn.style.display = 'none';
             userMenu.style.display = 'flex';
             userEmail.textContent = user.email;
+            favoritesFilterSection.style.display = 'block'; // Show favorites filter
+            watchedFilterSection.style.display = 'block'; // Show watched filter
             loadUserData();
         } else {
             authBtn.style.display = 'block';
             userMenu.style.display = 'none';
+            favoritesFilterSection.style.display = 'none'; // Hide favorites filter
+            watchedFilterSection.style.display = 'none'; // Hide watched filter
+            favoritesFilter.checked = false; // Reset favorites filter
+            document.getElementById('watched-filter').value = 'all'; // Reset watched filter
             userFavorites = [];
             // Keep localStorage watched items when logged out
             watchedMovies = JSON.parse(localStorage.getItem('watchedMovies')) || [];
@@ -313,7 +324,7 @@ document.addEventListener('DOMContentLoaded', function() {
         moviesGrid.innerHTML = '';
         
         movies.forEach(movie => {
-            const isWatched = watchedMovies.includes(movie.id);
+            const isWatched = watchedMovies.includes(movie.imdbID);
             const card = createCard(movie, isWatched, 'movie');
             moviesGrid.appendChild(card);
         });
@@ -325,8 +336,8 @@ document.addEventListener('DOMContentLoaded', function() {
         tvShowsGrid.innerHTML = '';
         
         tvShows.forEach(show => {
-            const isWatched = watchedTVShows.includes(show.id);
-            const card = createCard(show, isWatched, 'tvshow');
+            const isWatched = watchedTVShows.includes(show.imdbID);
+            const card = createCard(show, isWatched, 'tv');
             tvShowsGrid.appendChild(card);
         });
     }
@@ -336,12 +347,13 @@ document.addEventListener('DOMContentLoaded', function() {
         const card = document.createElement('div');
         card.className = 'card';
         card.setAttribute('data-id', item.id);
+        card.setAttribute('data-imdbid', item.imdbID);
         card.setAttribute('data-type', type);
         
-        const isFavorite = userFavorites.includes(item.id);
+        const isFavorite = userFavorites.includes(item.imdbID);
         
         card.innerHTML = `
-            ${authService.isAuthenticated() ? `<button class="favorite-btn ${isFavorite ? 'active' : ''}" data-id="${item.id}" data-type="${type}">❤</button>` : ''}
+            ${authService.isAuthenticated() ? `<button class="favorite-btn ${isFavorite ? 'active' : ''}" data-imdbid="${item.imdbID}" data-type="${type}">❤</button>` : ''}
             <div class="card-poster">
                 ${item.poster ? `<img src="${item.poster}" alt="${item.title}" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">` : ''}
                 <div class="poster-placeholder" style="${item.poster ? 'display:none;' : ''}">🎬</div>
@@ -354,7 +366,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 </div>
                 <div class="genre">${item.genre}</div>
                 <p class="card-description">${item.description}</p>
-                <button class="watch-btn ${isWatched ? 'watched' : ''}" data-id="${item.id}" data-type="${type}">
+                <button class="watch-btn ${isWatched ? 'watched' : ''}" data-imdbid="${item.imdbID}" data-type="${type}">
                     <span class="btn-icon">${isWatched ? '✓' : '👁'}</span>
                     <span class="btn-text">${isWatched ? 'Watched' : 'Mark as Watched'}</span>
                 </button>
@@ -374,7 +386,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const watchBtn = card.querySelector('.watch-btn');
         watchBtn.addEventListener('click', function(e) {
             e.stopPropagation();
-            toggleWatched(item.id, type, this);
+            toggleWatched(item.imdbID, type, this);
         });
         
         // Add card click to open trailer modal
@@ -402,33 +414,48 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
 
-        const isFavorite = userFavorites.includes(item.id);
+        const isFavorite = userFavorites.includes(item.imdbID);
+        console.log('🔄 Toggle favorite:', item.imdbID, 'Currently favorite:', isFavorite);
         
         if (isFavorite) {
-            const result = await authService.removeFromFavorites(item.id);
+            const result = await authService.removeFromFavorites(item.imdbID);
+            console.log('❌ Remove from favorites result:', result);
             if (result.success) {
-                userFavorites = userFavorites.filter(id => id !== item.id);
+                userFavorites = userFavorites.filter(id => id !== item.imdbID);
                 button.classList.remove('active');
                 showNotification('Removed from favorites');
+            } else {
+                showNotification('Error: ' + (result.error || 'Failed to remove'));
             }
         } else {
-            const result = await authService.addToFavorites(item.id, item);
+            const result = await authService.addToFavorites(item.imdbID, item);
+            console.log('➕ Add to favorites result:', result);
             if (result.success) {
-                userFavorites.push(item.id);
+                userFavorites.push(item.imdbID);
                 button.classList.add('active');
                 showNotification('Added to favorites! ❤️');
+            } else {
+                showNotification('Error: ' + (result.error || 'Failed to add'));
             }
         }
     }
 
-    async function toggleWatched(id, type, button) {
-        const isWatched = type === 'movie' ? watchedMovies.includes(id) : watchedTVShows.includes(id);
+    async function toggleWatched(imdbID, type, button) {
+        if (!authService.isAuthenticated()) {
+            showNotification('Please login to mark as watched');
+            authModal.style.display = 'flex';
+            return;
+        }
+
+        const isWatched = type === 'movie' ? watchedMovies.includes(imdbID) : watchedTVShows.includes(imdbID);
         const itemData = type === 'movie' 
-            ? allMovies.find(m => m.id === id)
-            : allTVShows.find(s => s.id === id);
+            ? allMovies.find(m => m.imdbID === imdbID)
+            : allTVShows.find(s => s.imdbID === imdbID);
+        
+        console.log('🔄 Toggle watched:', imdbID, type, 'Currently watched:', isWatched, 'Authenticated:', authService.isAuthenticated());
         
         if (type === 'movie') {
-            const index = watchedMovies.indexOf(id);
+            const index = watchedMovies.indexOf(imdbID);
             if (index > -1) {
                 watchedMovies.splice(index, 1);
                 button.classList.remove('watched');
@@ -436,25 +463,33 @@ document.addEventListener('DOMContentLoaded', function() {
                 button.querySelector('.btn-text').textContent = 'Mark as Watched';
                 showNotification('Removed from watched list');
                 
-                // Sync to database if logged in
-                if (authService.isAuthenticated()) {
-                    await authService.removeFromWatched(id, 'movie');
+                const result = await authService.removeFromWatched(imdbID, 'movie');
+                console.log('❌ Remove from watched result:', result);
+                if (!result.success) {
+                    showNotification('Error: Failed to remove from watched');
+                    // Rollback on error
+                    watchedMovies.push(imdbID);
+                    button.classList.add('watched');
                 }
             } else {
-                watchedMovies.push(id);
+                watchedMovies.push(imdbID);
                 button.classList.add('watched');
                 button.querySelector('.btn-icon').textContent = '✓';
                 button.querySelector('.btn-text').textContent = 'Watched';
                 showNotification('Added to watched list! 🎉');
                 
-                // Sync to database if logged in
-                if (authService.isAuthenticated()) {
-                    await authService.addToWatched(id, 'movie', itemData);
+                const result = await authService.addToWatched(imdbID, 'movie', itemData);
+                console.log('➕ Add to watched result:', result);
+                if (!result.success) {
+                    showNotification('Error: Failed to add to watched');
+                    // Rollback on error
+                    watchedMovies.splice(watchedMovies.indexOf(imdbID), 1);
+                    button.classList.remove('watched');
                 }
             }
             localStorage.setItem('watchedMovies', JSON.stringify(watchedMovies));
         } else {
-            const index = watchedTVShows.indexOf(id);
+            const index = watchedTVShows.indexOf(imdbID);
             if (index > -1) {
                 watchedTVShows.splice(index, 1);
                 button.classList.remove('watched');
@@ -462,20 +497,28 @@ document.addEventListener('DOMContentLoaded', function() {
                 button.querySelector('.btn-text').textContent = 'Mark as Watched';
                 showNotification('Removed from watched list');
                 
-                // Sync to database if logged in
-                if (authService.isAuthenticated()) {
-                    await authService.removeFromWatched(id, 'tv');
+                const result = await authService.removeFromWatched(imdbID, 'tv');
+                console.log('❌ Remove from watched result:', result);
+                if (!result.success) {
+                    showNotification('Error: Failed to remove from watched');
+                    // Rollback on error
+                    watchedTVShows.push(imdbID);
+                    button.classList.add('watched');
                 }
             } else {
-                watchedTVShows.push(id);
+                watchedTVShows.push(imdbID);
                 button.classList.add('watched');
                 button.querySelector('.btn-icon').textContent = '✓';
                 button.querySelector('.btn-text').textContent = 'Watched';
                 showNotification('Added to watched list! 🎉');
                 
-                // Sync to database if logged in
-                if (authService.isAuthenticated()) {
-                    await authService.addToWatched(id, 'tv', itemData);
+                const result = await authService.addToWatched(imdbID, 'tv', itemData);
+                console.log('➕ Add to watched result:', result);
+                if (!result.success) {
+                    showNotification('Error: Failed to add to watched');
+                    // Rollback on error
+                    watchedTVShows.splice(watchedTVShows.indexOf(imdbID), 1);
+                    button.classList.remove('watched');
                 }
             }
             localStorage.setItem('watchedTVShows', JSON.stringify(watchedTVShows));
@@ -793,6 +836,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // Add event listeners for other filters
         ratingFilter.addEventListener('change', applyFiltersAndSort);
         watchedFilter.addEventListener('change', applyFiltersAndSort);
+        favoritesFilter.addEventListener('change', applyFiltersAndSort);
         directorFilter.addEventListener('change', applyFiltersAndSort);
         sortBy.addEventListener('change', applyFiltersAndSort);
         resetBtn.addEventListener('click', resetFilters);
@@ -989,10 +1033,16 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             
             // Watched filter
-            if (watchedFilter === 'watched' && !watchedList.includes(item.id)) {
+            if (watchedFilter === 'watched' && !watchedList.includes(item.imdbID)) {
                 return false;
             }
-            if (watchedFilter === 'unwatched' && watchedList.includes(item.id)) {
+            if (watchedFilter === 'unwatched' && watchedList.includes(item.imdbID)) {
+                return false;
+            }
+            
+            // Favorites filter
+            const favoritesOnly = document.getElementById('favorites-filter').checked;
+            if (favoritesOnly && !userFavorites.includes(item.imdbID)) {
                 return false;
             }
             
@@ -1057,6 +1107,7 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('rating-filter').value = '0';
         document.getElementById('rating-value').textContent = 'Any';
         document.getElementById('watched-filter').value = 'all';
+        document.getElementById('favorites-filter').checked = false;
         document.getElementById('runtime-filter').value = '0';
         document.getElementById('runtime-value').textContent = 'Any';
         document.getElementById('director-filter').value = 'all';
