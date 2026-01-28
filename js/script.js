@@ -132,6 +132,160 @@ document.addEventListener('DOMContentLoaded', function() {
         await authService.signOut();
     });
 
+    // Submit Title Modal
+    const addTitleBtn = document.getElementById('add-title-btn');
+    const submitTitleModal = document.getElementById('submit-title-modal');
+    const closeSubmitModal = document.getElementById('close-submit-modal');
+    const cancelSubmitBtn = document.getElementById('cancel-submit');
+    const submitTitleForm = document.getElementById('submit-title-form');
+    const submitStatus = document.getElementById('submit-status');
+
+    // Open submit modal
+    if (addTitleBtn) {
+        addTitleBtn.addEventListener('click', () => {
+            submitTitleModal.style.display = 'flex';
+            submitTitleForm.reset();
+            submitStatus.style.display = 'none';
+        });
+    }
+
+    // Close submit modal
+    if (closeSubmitModal) {
+        closeSubmitModal.addEventListener('click', () => {
+            submitTitleModal.style.display = 'none';
+        });
+    }
+
+    if (cancelSubmitBtn) {
+        cancelSubmitBtn.addEventListener('click', () => {
+            submitTitleModal.style.display = 'none';
+        });
+    }
+
+    // Click outside modal
+    submitTitleModal?.addEventListener('click', (e) => {
+        if (e.target === submitTitleModal) {
+            submitTitleModal.style.display = 'none';
+        }
+    });
+
+    // Handle form submission
+    submitTitleForm?.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        const type = document.getElementById('submit-type').value;
+        const title = document.getElementById('submit-title').value.trim();
+        const year = document.getElementById('submit-year').value.trim();
+        const description = document.getElementById('submit-description').value.trim();
+        const submitBtn = document.getElementById('submit-title-btn');
+
+        if (!title || !description) {
+            showSubmitStatus('Please fill in all required fields', 'error');
+            return;
+        }
+
+        // Disable submit button
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Validating...';
+        showSubmitStatus('🔍 Validating with OMDB...', 'loading');
+
+        try {
+            // Search OMDB for the title
+            console.log('🔍 Searching OMDB for:', title, year || '');
+            const omdbData = await apiHandler.searchMovie(title, year);
+
+            if (!omdbData || omdbData.Response === 'False') {
+                throw new Error('Title not found in OMDB. Please check the title and year.');
+            }
+
+            console.log('✅ OMDB Response:', omdbData);
+            showSubmitStatus('✓ Found in OMDB! Preparing data...', 'loading');
+
+            // Helper function to parse runtime (e.g., "148 min" -> 148)
+            const parseRuntime = (runtime) => {
+                if (!runtime || runtime === 'N/A') return null;
+                const match = runtime.match(/(\d+)/);
+                return match ? parseInt(match[1]) : null;
+            };
+
+            // Helper function to parse rating
+            const parseRating = (rating) => {
+                if (!rating || rating === 'N/A') return null;
+                const parsed = parseFloat(rating);
+                return isNaN(parsed) ? null : parsed;
+            };
+
+            // Helper function to parse seasons
+            const parseSeasons = (seasons) => {
+                if (!seasons || seasons === 'N/A') return null;
+                const parsed = parseInt(seasons);
+                return isNaN(parsed) ? null : parsed;
+            };
+
+            // Prepare data for database insertion
+            const dbData = {
+                title: omdbData.Title || title,
+                year: omdbData.Year && omdbData.Year !== 'N/A' ? omdbData.Year : null,
+                genre: omdbData.Genre && omdbData.Genre !== 'N/A' ? omdbData.Genre : 'Unknown',
+                imdb_rating: parseRating(omdbData.imdbRating),
+                description: omdbData.Plot && omdbData.Plot !== 'N/A' ? omdbData.Plot : description,
+                poster_url: omdbData.Poster && omdbData.Poster !== 'N/A' ? omdbData.Poster : null,
+                trailer_url: null,
+                director: omdbData.Director && omdbData.Director !== 'N/A' ? omdbData.Director : 'Unknown',
+                actors: omdbData.Actors && omdbData.Actors !== 'N/A' ? omdbData.Actors : 'Unknown',
+                runtime: parseRuntime(omdbData.Runtime),
+                rated: omdbData.Rated && omdbData.Rated !== 'N/A' ? omdbData.Rated : 'Not Rated',
+                imdb_id: omdbData.imdbID || null
+            };
+
+            // Add seasons for TV shows
+            if (type === 'tv') {
+                dbData.seasons = parseSeasons(omdbData.totalSeasons);
+            }
+
+            console.log('📋 Prepared data for DB:', dbData);
+
+            // Insert into database
+            submitBtn.textContent = 'Submitting...';
+            showSubmitStatus('📤 Adding to database...', 'loading');
+
+            let result;
+            if (type === 'movie') {
+                result = await dbService.insertMovie(dbData);
+            } else {
+                result = await dbService.insertTVShow(dbData);
+            }
+
+            if (result.success) {
+                showSubmitStatus(`✓ ${omdbData.Title} has been added successfully!`, 'success');
+                submitBtn.textContent = 'Success!';
+                
+                // Reload data after 2 seconds
+                setTimeout(async () => {
+                    submitTitleModal.style.display = 'none';
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = 'Validate & Submit';
+                    showNotification('✓ Title added! Refreshing...');
+                    await loadMovieData();
+                }, 2000);
+            } else {
+                throw new Error(result.error || 'Failed to add to database');
+            }
+
+        } catch (error) {
+            console.error('❌ Error submitting title:', error);
+            showSubmitStatus(`❌ Error: ${error.message}`, 'error');
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Validate & Submit';
+        }
+    });
+
+    function showSubmitStatus(message, type) {
+        submitStatus.textContent = message;
+        submitStatus.className = `submit-status ${type}`;
+        submitStatus.style.display = 'block';
+    }
+
     // Listen for auth state changes
     authService.onAuthChange((user) => {
         if (user) {

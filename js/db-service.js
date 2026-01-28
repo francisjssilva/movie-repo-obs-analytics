@@ -244,6 +244,82 @@ class DatabaseService {
         }
     }
 
+    // Insert new movie
+    async insertMovie(movieData) {
+        if (!this.configured) {
+            throw new Error('Supabase not configured');
+        }
+
+        try {
+            console.log('📝 Inserting new movie:', movieData.title);
+            
+            const response = await fetch(`${this.supabaseUrl}/rest/v1/movies`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'apikey': this.supabaseKey,
+                    'Authorization': `Bearer ${this.supabaseKey}`,
+                    'Prefer': 'return=representation'
+                },
+                body: JSON.stringify(movieData)
+            });
+
+            if (!response.ok) {
+                const error = await response.json();
+                throw new Error(error.message || 'Failed to insert movie');
+            }
+
+            const result = await response.json();
+            console.log('✅ Movie inserted successfully');
+            
+            // Clear cache to refresh data
+            this.cache.delete('movies');
+            
+            return { success: true, data: result };
+        } catch (error) {
+            console.error('❌ Error inserting movie:', error);
+            return { success: false, error: error.message };
+        }
+    }
+
+    // Insert new TV show
+    async insertTVShow(tvShowData) {
+        if (!this.configured) {
+            throw new Error('Supabase not configured');
+        }
+
+        try {
+            console.log('📝 Inserting new TV show:', tvShowData.title);
+            
+            const response = await fetch(`${this.supabaseUrl}/rest/v1/tv_shows`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'apikey': this.supabaseKey,
+                    'Authorization': `Bearer ${this.supabaseKey}`,
+                    'Prefer': 'return=representation'
+                },
+                body: JSON.stringify(tvShowData)
+            });
+
+            if (!response.ok) {
+                const error = await response.json();
+                throw new Error(error.message || 'Failed to insert TV show');
+            }
+
+            const result = await response.json();
+            console.log('✅ TV show inserted successfully');
+            
+            // Clear cache to refresh data
+            this.cache.delete('tv_shows');
+            
+            return { success: true, data: result };
+        } catch (error) {
+            console.error('❌ Error inserting TV show:', error);
+            return { success: false, error: error.message };
+        }
+    }
+
     // Clear cache
     clearCache() {
         this.cache.clear();

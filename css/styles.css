@@ -1628,3 +1628,175 @@ button, .card, .tab-btn, .watched-btn, .trailer-btn {
 .toggle-switch input[type="checkbox"]:checked + .toggle-slider:hover {
     background: linear-gradient(135deg, #ff7b7b 0%, #fe6a7f 100%);
 }
+
+/* Add Title Button */
+.add-title-btn {
+    background: linear-gradient(135deg, #5cd85a 0%, #48c774 100%);
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-weight: 600;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    margin-right: 15px;
+}
+
+.add-title-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(92, 216, 90, 0.4);
+}
+
+/* Submit Title Modal */
+.submit-modal-content {
+    background: linear-gradient(135deg, #1e2139 0%, #16213e 100%);
+    padding: 35px;
+    border-radius: 15px;
+    max-width: 550px;
+    width: 90%;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+}
+
+.submit-modal-content h2 {
+    color: #48dbfb;
+    margin-bottom: 10px;
+    font-size: 26px;
+}
+
+.modal-subtitle {
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 14px;
+    margin-bottom: 25px;
+}
+
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-group label {
+    display: block;
+    color: rgba(255, 255, 255, 0.9);
+    font-weight: 600;
+    margin-bottom: 8px;
+    font-size: 14px;
+}
+
+.form-group small {
+    display: block;
+    color: rgba(255, 255, 255, 0.5);
+    font-size: 12px;
+    margin-top: 5px;
+}
+
+.form-input {
+    width: 100%;
+    padding: 12px;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 8px;
+    color: white;
+    font-size: 14px;
+    transition: all 0.3s ease;
+    box-sizing: border-box;
+}
+
+.form-input:focus {
+    outline: none;
+    border-color: #48dbfb;
+    background: rgba(255, 255, 255, 0.15);
+}
+
+.form-input::placeholder {
+    color: rgba(255, 255, 255, 0.5);
+}
+
+textarea.form-input {
+    resize: vertical;
+    min-height: 100px;
+    font-family: inherit;
+}
+
+.form-actions {
+    display: flex;
+    gap: 15px;
+    margin-top: 25px;
+}
+
+.btn-cancel,
+.btn-submit {
+    flex: 1;
+    padding: 12px 24px;
+    border: none;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.btn-cancel {
+    background: rgba(255, 255, 255, 0.1);
+    color: rgba(255, 255, 255, 0.9);
+}
+
+.btn-cancel:hover {
+    background: rgba(255, 255, 255, 0.15);
+}
+
+.btn-submit {
+    background: linear-gradient(135deg, #5cd85a 0%, #48c774 100%);
+    color: white;
+}
+
+.btn-submit:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(92, 216, 90, 0.4);
+}
+
+.btn-submit:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.submit-status {
+    margin-top: 15px;
+    padding: 12px;
+    border-radius: 8px;
+    text-align: center;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.submit-status.success {
+    background: rgba(92, 216, 90, 0.2);
+    color: #5cd85a;
+}
+
+.submit-status.error {
+    background: rgba(255, 107, 107, 0.2);
+    color: #ff6b6b;
+}
+
+.submit-status.loading {
+    background: rgba(72, 219, 251, 0.2);
+    color: #48dbfb;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .submit-modal-content {
+        padding: 25px;
+        max-width: 95%;
+    }
+    
+    .form-actions {
+        flex-direction: column;
+    }
+    
+    .add-title-btn {
+        font-size: 12px;
+        padding: 6px 12px;
+    }
+}

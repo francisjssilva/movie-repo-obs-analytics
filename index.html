@@ -25,6 +25,7 @@
             <div class="user-section">
                 <button id="auth-btn" class="auth-btn">Login</button>
                 <div id="user-menu" class="user-menu" style="display: none;">
+                    <button id="add-title-btn" class="add-title-btn" title="Submit a new title">+ Add Title</button>
                     <span id="user-email" class="user-email"></span>
                     <button id="logout-btn" class="logout-btn">Logout</button>
                 </div>
@@ -248,6 +249,48 @@
                     <a href="#" id="auth-toggle-link">Sign up</a>
                 </p>
             </div>
+        </div>
+    </div>
+
+    <!-- Submit Title Modal -->
+    <div id="submit-title-modal" class="modal" style="display: none;">
+        <div class="modal-content submit-modal-content">
+            <span class="close-modal" id="close-submit-modal">&times;</span>
+            <h2>Submit a New Title</h2>
+            <p class="modal-subtitle">Help us expand our catalog! Submit a movie or TV show.</p>
+            
+            <form id="submit-title-form">
+                <div class="form-group">
+                    <label for="submit-type">Type *</label>
+                    <select id="submit-type" class="form-input" required>
+                        <option value="movie">Movie</option>
+                        <option value="tv">TV Show</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="submit-title">Title *</label>
+                    <input type="text" id="submit-title" class="form-input" placeholder="Enter title..." required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="submit-year">Year (optional)</label>
+                    <input type="text" id="submit-year" class="form-input" placeholder="e.g., 2024" pattern="[0-9]{4}">
+                    <small>Helps find the correct title in OMDB</small>
+                </div>
+                
+                <div class="form-group">
+                    <label for="submit-description">Description *</label>
+                    <textarea id="submit-description" class="form-input" rows="4" placeholder="Tell us why this title should be added..." required></textarea>
+                </div>
+                
+                <div class="form-actions">
+                    <button type="button" class="btn-cancel" id="cancel-submit">Cancel</button>
+                    <button type="submit" class="btn-submit" id="submit-title-btn">Validate & Submit</button>
+                </div>
+                
+                <p class="submit-status" id="submit-status" style="display: none;"></p>
+            </form>
         </div>
     </div>
 
