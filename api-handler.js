@@ -1,6 +1,6 @@
 // OMDB API Handler with fallback to local data
 const API_KEY = '550196';
-const OMDB_BASE_URL = 'http://www.omdbapi.com/';
+const OMDB_BASE_URL = 'https://www.omdbapi.com/';
 
 class MovieAPIHandler {
     constructor() {
