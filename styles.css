@@ -27,6 +27,18 @@ body {
     border-bottom: 2px solid rgba(255, 255, 255, 0.1);
 }
 
+.logo-link {
+    text-decoration: none;
+    color: inherit;
+    transition: transform 0.3s ease, opacity 0.3s ease;
+    cursor: pointer;
+}
+
+.logo-link:hover {
+    transform: scale(1.05);
+    opacity: 0.8;
+}
+
 .logo {
     display: flex;
     align-items: center;
@@ -143,6 +155,92 @@ body {
     background: linear-gradient(45deg, #ff6b6b, #feca57);
     color: #ffffff;
     box-shadow: 0 5px 20px rgba(255, 107, 107, 0.4);
+}
+
+/* Controls (Filters and Sort) Styles */
+.controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    flex-wrap: wrap;
+    gap: 20px;
+    padding: 25px;
+    margin-bottom: 30px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 15px;
+    backdrop-filter: blur(10px);
+}
+
+.filters {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+    flex: 1;
+}
+
+.sort-controls {
+    display: flex;
+    gap: 15px;
+    align-items: flex-end;
+}
+
+.filter-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.filter-group label {
+    font-size: 14px;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.8);
+}
+
+.filter-select {
+    padding: 10px 15px;
+    border: 2px solid rgba(72, 219, 251, 0.3);
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.1);
+    color: #ffffff;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    min-width: 150px;
+}
+
+.filter-select:hover {
+    border-color: rgba(72, 219, 251, 0.6);
+    background: rgba(255, 255, 255, 0.15);
+}
+
+.filter-select:focus {
+    outline: none;
+    border-color: #48dbfb;
+    box-shadow: 0 0 15px rgba(72, 219, 251, 0.3);
+}
+
+.filter-select option {
+    background: #1a1a2e;
+    color: #ffffff;
+}
+
+.reset-btn {
+    padding: 10px 20px;
+    border: 2px solid rgba(255, 107, 107, 0.5);
+    border-radius: 10px;
+    background: rgba(255, 107, 107, 0.2);
+    color: #ff6b6b;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    white-space: nowrap;
+}
+
+.reset-btn:hover {
+    background: rgba(255, 107, 107, 0.3);
+    border-color: #ff6b6b;
+    transform: scale(1.05);
 }
 
 /* Content Styles */

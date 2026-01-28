@@ -11,10 +11,12 @@
     <div class="container">
         <!-- Header -->
         <header class="header">
-            <div class="logo">
-                <span class="logo-icon">🎬</span>
-                <h1>CineHub</h1>
-            </div>
+            <a href="index.html" class="logo-link">
+                <div class="logo">
+                    <span class="logo-icon">🎬</span>
+                    <h1>CineHub</h1>
+                </div>
+            </a>
             <div class="search-bar">
                 <input type="text" placeholder="Search movies or TV shows..." class="search-input">
                 <button class="search-btn">🔍</button>
@@ -32,6 +34,50 @@
                 TV Shows
             </button>
         </nav>
+
+        <!-- Filters and Sort Controls -->
+        <div class="controls">
+            <div class="filters">
+                <div class="filter-group">
+                    <label for="genre-filter">🎭 Genre:</label>
+                    <select id="genre-filter" class="filter-select">
+                        <option value="all">All Genres</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label for="rating-filter">⭐ Min Rating:</label>
+                    <select id="rating-filter" class="filter-select">
+                        <option value="0">All Ratings</option>
+                        <option value="7">7.0+</option>
+                        <option value="8">8.0+</option>
+                        <option value="9">9.0+</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label for="watched-filter">👁️ Status:</label>
+                    <select id="watched-filter" class="filter-select">
+                        <option value="all">All</option>
+                        <option value="watched">Watched</option>
+                        <option value="unwatched">Not Watched</option>
+                    </select>
+                </div>
+            </div>
+            <div class="sort-controls">
+                <div class="filter-group">
+                    <label for="sort-by">🔄 Sort By:</label>
+                    <select id="sort-by" class="filter-select">
+                        <option value="default">Default</option>
+                        <option value="title-asc">Title (A-Z)</option>
+                        <option value="title-desc">Title (Z-A)</option>
+                        <option value="rating-desc">Rating (High to Low)</option>
+                        <option value="rating-asc">Rating (Low to High)</option>
+                        <option value="year-desc">Year (Newest First)</option>
+                        <option value="year-asc">Year (Oldest First)</option>
+                    </select>
+                </div>
+                <button id="reset-filters" class="reset-btn">🔄 Reset</button>
+            </div>
+        </div>
 
         <!-- Tab Content -->
         <main class="content">

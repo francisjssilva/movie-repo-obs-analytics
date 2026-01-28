@@ -7,6 +7,10 @@ document.addEventListener('DOMContentLoaded', function() {
     let watchedMovies = JSON.parse(localStorage.getItem('watchedMovies')) || [];
     let watchedTVShows = JSON.parse(localStorage.getItem('watchedTVShows')) || [];
 
+    // Store all data for filtering/sorting
+    let allMovies = [];
+    let allTVShows = [];
+
     // Load movie data
     loadMovieData();
 
@@ -22,6 +26,9 @@ document.addEventListener('DOMContentLoaded', function() {
             // Add active class to clicked button and corresponding content
             this.classList.add('active');
             document.getElementById(tabId).classList.add('active');
+            
+            // Update genre filter options for active tab
+            updateGenreFilter();
         });
     });
 
@@ -48,15 +55,26 @@ document.addEventListener('DOMContentLoaded', function() {
             });
 
             // Display enriched data
+            allMovies = enrichedMovies;
+            allTVShows = enrichedTVShows;
             displayMovies(enrichedMovies);
             displayTVShows(enrichedTVShows);
+            
+            // Initialize filters
+            initializeFilters();
 
             console.log('✅ Data loaded successfully with OMDB API enrichment');
         } catch (error) {
             console.error('Error loading movie data:', error);
             // Fallback to local data only
+            allMovies = moviesData.movies;
+            allTVShows = moviesData.tvShows;
             displayMovies(moviesData.movies);
             displayTVShows(moviesData.tvShows);
+            
+            // Initialize filters
+            initializeFilters();
+            
             showNotification('⚠️ Using local data only (API unavailable)');
             console.warn('⚠️ Using local data only (API unavailable)');
         }
@@ -382,6 +400,142 @@ document.addEventListener('DOMContentLoaded', function() {
             closeTrailerModal();
         }
     });
+
+    // Filter and Sort Functionality
+    function initializeFilters() {
+        updateGenreFilter();
+        
+        const genreFilter = document.getElementById('genre-filter');
+        const ratingFilter = document.getElementById('rating-filter');
+        const watchedFilter = document.getElementById('watched-filter');
+        const sortBy = document.getElementById('sort-by');
+        const resetBtn = document.getElementById('reset-filters');
+        
+        // Add event listeners
+        genreFilter.addEventListener('change', applyFiltersAndSort);
+        ratingFilter.addEventListener('change', applyFiltersAndSort);
+        watchedFilter.addEventListener('change', applyFiltersAndSort);
+        sortBy.addEventListener('change', applyFiltersAndSort);
+        resetBtn.addEventListener('click', resetFilters);
+    }
+    
+    function updateGenreFilter() {
+        const activeTab = document.querySelector('.tab-btn.active').getAttribute('data-tab');
+        const data = activeTab === 'movies' ? allMovies : allTVShows;
+        
+        // Extract unique genres
+        const genres = new Set();
+        data.forEach(item => {
+            if (item.genre) {
+                item.genre.split(',').forEach(g => genres.add(g.trim()));
+            }
+        });
+        
+        // Update genre filter options
+        const genreFilter = document.getElementById('genre-filter');
+        const currentValue = genreFilter.value;
+        genreFilter.innerHTML = '<option value=\"all\">All Genres</option>';
+        Array.from(genres).sort().forEach(genre => {
+            const option = document.createElement('option');
+            option.value = genre;
+            option.textContent = genre;
+            genreFilter.appendChild(option);
+        });
+        genreFilter.value = currentValue === 'all' ? 'all' : (Array.from(genres).includes(currentValue) ? currentValue : 'all');
+    }
+    
+    function applyFiltersAndSort() {
+        const activeTab = document.querySelector('.tab-btn.active').getAttribute('data-tab');
+        const genreFilter = document.getElementById('genre-filter').value;
+        const ratingFilter = parseFloat(document.getElementById('rating-filter').value);
+        const watchedFilter = document.getElementById('watched-filter').value;
+        const sortBy = document.getElementById('sort-by').value;
+        
+        let data = activeTab === 'movies' ? [...allMovies] : [...allTVShows];
+        const watchedList = activeTab === 'movies' ? watchedMovies : watchedTVShows;
+        
+        // Apply filters
+        data = data.filter(item => {
+            // Genre filter
+            if (genreFilter !== 'all' && !item.genre.includes(genreFilter)) {
+                return false;
+            }
+            
+            // Rating filter
+            if (item.imdb < ratingFilter) {
+                return false;
+            }
+            
+            // Watched filter
+            if (watchedFilter === 'watched' && !watchedList.includes(item.id)) {
+                return false;
+            }
+            if (watchedFilter === 'unwatched' && watchedList.includes(item.id)) {
+                return false;
+            }
+            
+            return true;
+        });
+        
+        // Apply sorting
+        switch(sortBy) {
+            case 'title-asc':
+                data.sort((a, b) => a.title.localeCompare(b.title));
+                break;
+            case 'title-desc':
+                data.sort((a, b) => b.title.localeCompare(a.title));
+                break;
+            case 'rating-desc':
+                data.sort((a, b) => b.imdb - a.imdb);
+                break;
+            case 'rating-asc':
+                data.sort((a, b) => a.imdb - b.imdb);
+                break;
+            case 'year-desc':
+                data.sort((a, b) => {
+                    const yearA = parseInt(a.year.toString().split('-')[0]);
+                    const yearB = parseInt(b.year.toString().split('-')[0]);
+                    return yearB - yearA;
+                });
+                break;
+            case 'year-asc':
+                data.sort((a, b) => {
+                    const yearA = parseInt(a.year.toString().split('-')[0]);
+                    const yearB = parseInt(b.year.toString().split('-')[0]);
+                    return yearA - yearB;
+                });
+                break;
+        }
+        
+        // Display filtered and sorted data
+        if (activeTab === 'movies') {
+            displayMovies(data);
+        } else {
+            displayTVShows(data);
+        }
+        
+        // Show notification
+        const totalCount = activeTab === 'movies' ? allMovies.length : allTVShows.length;
+        if (data.length < totalCount) {
+            showNotification(`Showing ${data.length} of ${totalCount} ${activeTab === 'movies' ? 'movies' : 'TV shows'}`);
+        }
+    }
+    
+    function resetFilters() {
+        document.getElementById('genre-filter').value = 'all';
+        document.getElementById('rating-filter').value = '0';
+        document.getElementById('watched-filter').value = 'all';
+        document.getElementById('sort-by').value = 'default';
+        
+        const activeTab = document.querySelector('.tab-btn.active').getAttribute('data-tab');
+        if (activeTab === 'movies') {
+            displayMovies(allMovies);
+        } else {
+            displayTVShows(allTVShows);
+        }
+        
+        showNotification('✅ Filters reset');
+    }
 
     // Add animation styles for notifications
     const style = document.createElement('style');
