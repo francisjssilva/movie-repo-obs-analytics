@@ -9,6 +9,17 @@ body {
     background: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
     min-height: 100vh;
     color: #ffffff;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+/* Touch-friendly improvements */
+button, a, input, select {
+    -webkit-tap-highlight-color: transparent;
+}
+
+button, .card, .tab-btn, .watched-btn, .trailer-btn {
+    touch-action: manipulation;
 }
 
 .container {
@@ -271,11 +282,30 @@ body {
     box-shadow: 0 8px 24px rgba(255, 107, 107, 0.4);
     z-index: 1000;
     transition: all 0.3s ease;
+    -webkit-tap-highlight-color: transparent;
 }
 
 .sidebar-toggle-btn:hover {
     transform: translateY(-3px);
     box-shadow: 0 12px 32px rgba(255, 107, 107, 0.6);
+}
+
+.sidebar-backdrop {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    z-index: 1999;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.sidebar-backdrop.active {
+    display: block;
+    opacity: 1;
 }
 
 .content-wrapper {
@@ -327,6 +357,7 @@ body {
     
     .filters-sidebar.active {
         transform: translateX(0);
+        box-shadow: 0 0 50px rgba(0, 0, 0, 0.5);
     }
     
     .sidebar-toggle {
@@ -341,6 +372,25 @@ body {
     
     .content-wrapper {
         width: 100%;
+    }
+    
+    .main-layout {
+        padding: 0 15px;
+    }
+}
+
+/* Tablet optimization */
+@media (max-width: 1024px) and (min-width: 769px) {
+    .cards-grid {
+        grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    }
+    
+    .tab-header {
+        gap: 15px;
+    }
+    
+    .header {
+        padding: 25px 30px;
     }
 }
 
@@ -644,12 +694,17 @@ body {
     cursor: pointer;
     border: 2px solid rgba(255, 255, 255, 0.1);
     backdrop-filter: blur(10px);
+    -webkit-tap-highlight-color: transparent;
 }
 
 .card:hover {
     transform: translateY(-10px);
     box-shadow: 0 15px 40px rgba(72, 219, 251, 0.3);
     border-color: rgba(72, 219, 251, 0.5);
+}
+
+.card:active {
+    transform: translateY(-5px);
 }
 
 .card-info {
@@ -862,6 +917,8 @@ body {
     height: 100%;
     z-index: 9999;
     animation: fadeIn 0.3s ease;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
 }
 
 .modal.active {
@@ -887,11 +944,33 @@ body {
     max-height: 90vh;
     background: linear-gradient(135deg, rgba(15, 12, 41, 0.95) 0%, rgba(48, 43, 99, 0.95) 100%);
     border-radius: 20px;
-    overflow: hidden;
+    overflow-y: auto;
+    overflow-x: hidden;
     box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
     border: 2px solid rgba(72, 219, 251, 0.3);
     animation: slideUp 0.4s ease;
     z-index: 10000;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Custom scrollbar for modal */
+.modal-content::-webkit-scrollbar {
+    width: 8px;
+}
+
+.modal-content::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 10px;
+}
+
+.modal-content::-webkit-scrollbar-thumb {
+    background: rgba(72, 219, 251, 0.5);
+    border-radius: 10px;
+}
+
+.modal-content::-webkit-scrollbar-thumb:hover {
+    background: rgba(72, 219, 251, 0.7);
 }
 
 @keyframes slideUp {
@@ -1034,7 +1113,17 @@ body {
 @media (max-width: 768px) {
     .header {
         flex-direction: column;
-        gap: 20px;
+        gap: 15px;
+        padding: 20px;
+    }
+
+    .logo-link {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .search-bar {
+        width: 100%;
     }
 
     .search-input {
@@ -1044,35 +1133,249 @@ body {
     .logo h1 {
         font-size: 28px;
     }
-
-    .tabs {
-        flex-direction: column;
-        gap: 10px;
+    
+    .logo-icon {
+        font-size: 36px;
     }
 
-    .cards-grid {
-        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-        gap: 20px;
+    .tabs {
+        gap: 10px;
+        padding: 10px;
+    }
+
+    .tab-btn {
+        flex: 1;
+        padding: 12px 20px;
+        font-size: 14px;
+    }
+    
+    .tab-icon {
+        font-size: 18px;
+    }
+    
+    .main-layout {
+        padding: 0 10px;
+    }
+    
+    .tab-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 15px;
+        margin-bottom: 20px;
+    }
+    
+    .sort-control {
+        width: 100%;
+    }
+    
+    .sort-control .filter-select {
+        flex: 1;
     }
 
     .section-title {
         font-size: 24px;
     }
 
+    .cards-grid {
+        grid-template-columns: 1fr;
+        gap: 20px;
+    }
+    
+    .card {
+        max-width: 100%;
+    }
+
     .modal-content {
         width: 95%;
-        max-height: 85vh;
+        max-width: 95%;
+        max-height: 90vh;
+        margin: 20px auto;
     }
 
     .modal-header {
-        padding: 20px;
+        padding: 15px;
     }
 
     .modal-header h2 {
-        font-size: 22px;
+        font-size: 20px;
     }
 
     .modal-body {
+        padding: 15px;
+        font-size: 14px;
+    }
+    
+    .modal-info p {
+        font-size: 14px;
+    }
+    
+    .modal-buttons {
+        flex-direction: column;
+        gap: 10px;
+    }
+    
+    .trailer-btn {
+        width: 100%;
+        justify-content: center;
+    }
+    
+    .sidebar-toggle-btn {
+        bottom: 20px;
+        left: 20px;
+        padding: 12px 20px;
+        font-size: 14px;
+    }
+    
+    .filters-sidebar {
+        width: 85%;
+        max-width: 300px;
+    }
+    
+    .footer {
         padding: 20px;
+        font-size: 12px;
+    }
+}
+
+/* Extra small mobile devices */
+@media (max-width: 480px) {
+    .header {
+        padding: 15px 10px;
+    }
+    
+    .logo h1 {
+        font-size: 24px;
+    }
+    
+    .logo-icon {
+        font-size: 30px;
+    }
+    
+    .search-input {
+        font-size: 14px;
+        padding: 10px 15px;
+    }
+    
+    .search-btn {
+        padding: 10px 15px;
+        font-size: 18px;
+    }
+    
+    .tab-btn {
+        padding: 10px 15px;
+        font-size: 13px;
+    }
+    
+    .section-title {
+        font-size: 20px;
+    }
+    
+    .sort-control label {
+        font-size: 12px;
+    }
+    
+    .sort-control .filter-select {
+        font-size: 13px;
+        padding: 8px 12px;
+    }
+    
+    .card {
+        border-radius: 12px;
+    }
+    
+    .card-title {
+        font-size: 16px;
+    }
+    
+    .card-info {
+        font-size: 12px;
+    }
+    
+    .card-description {
+        font-size: 13px;
+    }
+    
+    .watched-btn {
+        font-size: 13px;
+        padding: 8px 16px;
+    }
+    
+    .modal-content {
+        width: 98%;
+        max-height: 95vh;
+        margin: 10px auto;
+    }
+    
+    .modal-header h2 {
+        font-size: 18px;
+    }
+    
+    .close-modal {
+        font-size: 28px;
+    }
+    
+    .modal-body {
+        padding: 12px;
+    }
+    
+    .modal-info p {
+        font-size: 13px;
+    }
+    
+    .trailer-btn {
+        font-size: 13px;
+        padding: 10px 16px;
+    }
+    
+    .sidebar-toggle-btn {
+        bottom: 15px;
+        left: 15px;
+        padding: 10px 16px;
+        font-size: 13px;
+    }
+    
+    .filters-sidebar {
+        width: 90%;
+        padding: 20px;
+    }
+    
+    .sidebar-header h3 {
+        font-size: 20px;
+    }
+    
+    .filter-label {
+        font-size: 13px;
+    }
+    
+    .filter-select {
+        font-size: 13px;
+        padding: 8px 12px;
+    }
+    
+    .multi-select-btn {
+        font-size: 13px;
+        padding: 8px 12px;
+    }
+    
+    .runtime-slider,
+    #rating-filter {
+        height: 6px;
+    }
+    
+    .reset-btn-sidebar {
+        font-size: 14px;
+        padding: 10px 16px;
+    }
+}
+
+/* Landscape mobile optimization */
+@media (max-width: 768px) and (orientation: landscape) {
+    .modal-content {
+        max-height: 95vh;
+        overflow-y: auto;
+    }
+    
+    .cards-grid {
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
     }
 }

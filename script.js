@@ -436,15 +436,25 @@ document.addEventListener('DOMContentLoaded', function() {
         const sidebarToggleOpen = document.getElementById('sidebar-toggle-open');
         const sidebarToggleClose = document.getElementById('sidebar-toggle-close');
         const sidebar = document.getElementById('filters-sidebar');
+        const sidebarBackdrop = document.getElementById('sidebar-backdrop');
         
-        if (sidebarToggleOpen && sidebarToggleClose && sidebar) {
+        if (sidebarToggleOpen && sidebarToggleClose && sidebar && sidebarBackdrop) {
+            // Open sidebar
             sidebarToggleOpen.addEventListener('click', () => {
                 sidebar.classList.add('active');
+                sidebarBackdrop.classList.add('active');
+                document.body.style.overflow = 'hidden'; // Prevent background scroll
             });
             
-            sidebarToggleClose.addEventListener('click', () => {
+            // Close sidebar
+            const closeSidebar = () => {
                 sidebar.classList.remove('active');
-            });
+                sidebarBackdrop.classList.remove('active');
+                document.body.style.overflow = ''; // Restore scroll
+            };
+            
+            sidebarToggleClose.addEventListener('click', closeSidebar);
+            sidebarBackdrop.addEventListener('click', closeSidebar);
             
             // Close sidebar when clicking outside
             document.addEventListener('click', (e) => {
@@ -452,7 +462,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     sidebar.classList.contains('active') && 
                     !sidebar.contains(e.target) && 
                     !sidebarToggleOpen.contains(e.target)) {
-                    sidebar.classList.remove('active');
+                    closeSidebar();
                 }
             });
         }
