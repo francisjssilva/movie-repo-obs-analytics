@@ -169,66 +169,152 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    // Handle form submission
-    submitTitleForm?.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        
+    // Search OMDB and display results
+    const searchOMDBBtn = document.getElementById('search-omdb-btn');
+    let searchResults = [];
+    let selectedResult = null;
+
+    searchOMDBBtn?.addEventListener('click', async () => {
         const type = document.getElementById('submit-type').value;
         const title = document.getElementById('submit-title').value.trim();
-        const year = document.getElementById('submit-year').value.trim();
-        const description = document.getElementById('submit-description').value.trim();
-        const submitBtn = document.getElementById('submit-title-btn');
+        const resultsContainer = document.getElementById('omdb-results');
+        const resultsGrid = document.getElementById('results-grid');
 
-        if (!title || !description) {
-            showSubmitStatus('Please fill in all required fields', 'error');
+        if (!title) {
+            showSubmitStatus('Please enter a title to search', 'error');
             return;
         }
 
-        // Disable submit button
-        submitBtn.disabled = true;
-        submitBtn.textContent = 'Validating...';
-        showSubmitStatus('🔍 Validating with OMDB...', 'loading');
+        // Disable search button
+        searchOMDBBtn.disabled = true;
+        searchOMDBBtn.textContent = 'Searching...';
+        showSubmitStatus('🔍 Searching OMDB...', 'loading');
+        resultsContainer.style.display = 'none';
+        resultsGrid.innerHTML = '';
 
         try {
-            // Search OMDB for the title
-            console.log('🔍 Searching OMDB for:', title, year || '');
-            const omdbData = await apiHandler.searchMovie(title, year);
+            // Search OMDB for multiple results
+            const omdbType = type === 'tv' ? 'series' : 'movie';
+            searchResults = await apiHandler.searchTitles(title, omdbType);
 
-            if (!omdbData || omdbData.Response === 'False') {
-                throw new Error('Title not found in OMDB. Please check the title and year.');
+            if (searchResults.length === 0) {
+                throw new Error('No results found. Try a different search term.');
             }
 
-            console.log('✅ OMDB Response:', omdbData);
-            showSubmitStatus('✓ Found in OMDB! Preparing data...', 'loading');
+            console.log(`✅ Found ${searchResults.length} results`);
+            showSubmitStatus(`Found ${searchResults.length} result(s)`, 'success');
 
-            // Helper function to parse runtime (e.g., "148 min" -> 148)
+            // Check which titles already exist in database
+            const existsChecks = await Promise.all(
+                searchResults.map(r => dbService.checkExistsByIMDbID(r.imdbID, type))
+            );
+
+            // Display results
+            resultsGrid.innerHTML = '';
+            searchResults.forEach((result, index) => {
+                const exists = existsChecks[index].exists;
+                const card = document.createElement('div');
+                card.className = `result-card ${exists ? 'exists' : ''}`;
+                card.dataset.index = index;
+                card.dataset.imdbid = result.imdbID;
+
+                const hasPoster = result.Poster && result.Poster !== 'N/A';
+                
+                card.innerHTML = `
+                    ${hasPoster 
+                        ? `<img src="${result.Poster}" alt="${result.Title}">`
+                        : `<div class="poster-placeholder">🎬</div>`
+                    }
+                    <div class="title">${result.Title}</div>
+                    <div class="year">${result.Year}</div>
+                    ${exists ? '<div class="exists-badge">Already Added</div>' : ''}
+                `;
+
+                if (!exists) {
+                    card.addEventListener('click', () => selectResult(index));
+                }
+
+                resultsGrid.appendChild(card);
+            });
+
+            resultsContainer.style.display = 'block';
+
+        } catch (error) {
+            console.error('❌ Error searching OMDB:', error);
+            showSubmitStatus(`❌ ${error.message}`, 'error');
+        } finally {
+            searchOMDBBtn.disabled = false;
+            searchOMDBBtn.textContent = 'Search OMDB';
+        }
+    });
+
+    // Select a result (highlight only)
+    function selectResult(index) {
+        const result = searchResults[index];
+        
+        // Highlight selected card
+        document.querySelectorAll('.result-card').forEach(card => {
+            card.classList.remove('selected');
+        });
+        document.querySelector(`[data-index="${index}"]`).classList.add('selected');
+
+        selectedResult = result;
+        
+        // Enable confirm button
+        const confirmBtn = document.getElementById('confirm-selection-btn');
+        confirmBtn.disabled = false;
+        
+        showSubmitStatus(`Selected: ${result.Title} (${result.Year})`, 'success');
+    }
+
+    // Confirm selection and add to database
+    const confirmSelectionBtn = document.getElementById('confirm-selection-btn');
+    confirmSelectionBtn?.addEventListener('click', async () => {
+        if (!selectedResult) return;
+
+        const type = document.getElementById('submit-type').value;
+        const result = selectedResult;
+        
+        confirmSelectionBtn.disabled = true;
+        confirmSelectionBtn.textContent = 'Adding...';
+        showSubmitStatus('🔄 Loading full details...', 'loading');
+
+        try {
+            // Fetch full details from OMDB
+            const omdbData = await apiHandler.fetchMovieDetailsByID(result.imdbID);
+
+            if (!omdbData || omdbData.Response === 'False') {
+                throw new Error('Could not load full details');
+            }
+
+            console.log('✅ Full OMDB Response:', omdbData);
+
+            // Helper functions
             const parseRuntime = (runtime) => {
                 if (!runtime || runtime === 'N/A') return null;
                 const match = runtime.match(/(\d+)/);
                 return match ? parseInt(match[1]) : null;
             };
 
-            // Helper function to parse rating
             const parseRating = (rating) => {
                 if (!rating || rating === 'N/A') return null;
                 const parsed = parseFloat(rating);
                 return isNaN(parsed) ? null : parsed;
             };
 
-            // Helper function to parse seasons
             const parseSeasons = (seasons) => {
                 if (!seasons || seasons === 'N/A') return null;
                 const parsed = parseInt(seasons);
                 return isNaN(parsed) ? null : parsed;
             };
 
-            // Prepare data for database insertion
+            // Prepare data for database
             const dbData = {
-                title: omdbData.Title || title,
+                title: omdbData.Title,
                 year: omdbData.Year && omdbData.Year !== 'N/A' ? omdbData.Year : null,
                 genre: omdbData.Genre && omdbData.Genre !== 'N/A' ? omdbData.Genre : 'Unknown',
                 imdb_rating: parseRating(omdbData.imdbRating),
-                description: omdbData.Plot && omdbData.Plot !== 'N/A' ? omdbData.Plot : description,
+                description: omdbData.Plot && omdbData.Plot !== 'N/A' ? omdbData.Plot : 'No description available',
                 poster_url: omdbData.Poster && omdbData.Poster !== 'N/A' ? omdbData.Poster : null,
                 trailer_url: null,
                 director: omdbData.Director && omdbData.Director !== 'N/A' ? omdbData.Director : 'Unknown',
@@ -238,7 +324,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 imdb_id: omdbData.imdbID || null
             };
 
-            // Add seasons for TV shows
             if (type === 'tv') {
                 dbData.seasons = parseSeasons(omdbData.totalSeasons);
             }
@@ -246,37 +331,36 @@ document.addEventListener('DOMContentLoaded', function() {
             console.log('📋 Prepared data for DB:', dbData);
 
             // Insert into database
-            submitBtn.textContent = 'Submitting...';
             showSubmitStatus('📤 Adding to database...', 'loading');
 
-            let result;
+            let insertResult;
             if (type === 'movie') {
-                result = await dbService.insertMovie(dbData);
+                insertResult = await dbService.insertMovie(dbData);
             } else {
-                result = await dbService.insertTVShow(dbData);
+                insertResult = await dbService.insertTVShow(dbData);
             }
 
-            if (result.success) {
+            if (insertResult.success) {
                 showSubmitStatus(`✓ ${omdbData.Title} has been added successfully!`, 'success');
-                submitBtn.textContent = 'Success!';
+                confirmSelectionBtn.textContent = 'Added!';
                 
                 // Reload data after 2 seconds
                 setTimeout(async () => {
                     submitTitleModal.style.display = 'none';
-                    submitBtn.disabled = false;
-                    submitBtn.textContent = 'Validate & Submit';
+                    confirmSelectionBtn.disabled = false;
+                    confirmSelectionBtn.textContent = 'Confirm Selection';
                     showNotification('✓ Title added! Refreshing...');
                     await loadMovieData();
                 }, 2000);
             } else {
-                throw new Error(result.error || 'Failed to add to database');
+                throw new Error(insertResult.error || 'Failed to add to database');
             }
 
         } catch (error) {
-            console.error('❌ Error submitting title:', error);
+            console.error('❌ Error adding title:', error);
             showSubmitStatus(`❌ Error: ${error.message}`, 'error');
-            submitBtn.disabled = false;
-            submitBtn.textContent = 'Validate & Submit';
+            confirmSelectionBtn.disabled = false;
+            confirmSelectionBtn.textContent = 'Confirm Selection';
         }
     });
 

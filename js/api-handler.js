@@ -70,6 +70,60 @@ class APIHandler {
         this.lastRequestTime = Date.now();
     }
 
+    // Search for multiple movies/shows by title (returns list)
+    async searchTitles(searchTerm, type = null) {
+        await this.waitForRateLimit();
+
+        console.log(`🔍 Searching OMDB for: "${searchTerm}"`);
+        
+        // Build URL for search (use 's' parameter for multiple results)
+        let url = `${this.baseUrl}?apikey=${this.apiKey}&s=${encodeURIComponent(searchTerm)}`;
+        if (type) {
+            url += `&type=${type}`; // 'movie' or 'series'
+        }
+        
+        try {
+            const response = await fetch(url);
+            const data = await response.json();
+            
+            if (data.Response === 'True' && data.Search) {
+                console.log(`✅ Found ${data.Search.length} results`);
+                return data.Search; // Returns array of {Title, Year, imdbID, Type, Poster}
+            } else {
+                console.warn(`⚠️ No results found for "${searchTerm}"`);
+                return [];
+            }
+        } catch (error) {
+            console.error(`❌ Error searching OMDB:`, error);
+            return [];
+        }
+    }
+
+    // Fetch full movie details by IMDb ID
+    async fetchMovieDetailsByID(imdbID) {
+        await this.waitForRateLimit();
+
+        console.log(`📥 Fetching full details for ${imdbID}`);
+        
+        const url = `${this.baseUrl}?apikey=${this.apiKey}&i=${imdbID}&plot=full`;
+        
+        try {
+            const response = await fetch(url);
+            const data = await response.json();
+            
+            if (data.Response === 'True') {
+                console.log(`✅ Got full details for ${data.Title}`);
+                return data; // Return raw OMDB data
+            } else {
+                console.warn(`⚠️ Details not found for ${imdbID}`);
+                return null;
+            }
+        } catch (error) {
+            console.error(`❌ Error fetching details:`, error);
+            return null;
+        }
+    }
+
     // Search for movie by title and year
     async searchMovie(title, year) {
         // Parse and validate year

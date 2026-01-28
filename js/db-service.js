@@ -282,6 +282,26 @@ class DatabaseService {
         }
     }
 
+    // Check if movie/show exists by IMDb ID
+    async checkExistsByIMDbID(imdbID, type) {
+        if (!this.configured) {
+            throw new Error('Supabase not configured');
+        }
+
+        try {
+            const table = type === 'movie' ? 'movies' : 'tv_shows';
+            const data = await this.supabaseRequest(`${table}?imdb_id=eq.${imdbID}&select=id,title`);
+            
+            return {
+                exists: data.length > 0,
+                title: data.length > 0 ? data[0].title : null
+            };
+        } catch (error) {
+            console.error('❌ Error checking if title exists:', error);
+            return { exists: false, title: null };
+        }
+    }
+
     // Insert new TV show
     async insertTVShow(tvShowData) {
         if (!this.configured) {
