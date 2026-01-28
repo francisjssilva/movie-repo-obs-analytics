@@ -268,12 +268,13 @@ document.addEventListener('DOMContentLoaded', function() {
         }, 3000);
     }
 
-    // Trailer Modal Functions
+    // Movie Info Modal Functions
     function openTrailerModal(item) {
         const modal = document.getElementById('trailer-modal');
         const modalTitle = document.getElementById('modal-title');
         const modalMeta = document.getElementById('modal-meta');
-        const trailerPlayer = document.getElementById('trailer-player');
+        const imdbBtn = document.getElementById('imdb-trailer-btn');
+        const youtubeBtn = document.getElementById('youtube-trailer-btn');
 
         // Set modal content
         modalTitle.textContent = item.title;
@@ -283,12 +284,30 @@ document.addEventListener('DOMContentLoaded', function() {
             <span>IMDb ${item.imdb}</span>
         `;
 
-        // Set trailer URL
-        if (item.trailer) {
-            trailerPlayer.src = item.trailer;
+        // Set movie details
+        document.getElementById('modal-director').textContent = item.director || 'N/A';
+        document.getElementById('modal-actors').textContent = item.actors || 'N/A';
+        document.getElementById('modal-runtime').textContent = item.runtime || 'N/A';
+        document.getElementById('modal-rated').textContent = item.rated || 'N/A';
+        document.getElementById('modal-description').textContent = item.description || 'N/A';
+
+        // Configure trailer buttons
+        if (item.imdbVideoGallery) {
+            imdbBtn.href = item.imdbVideoGallery;
+            imdbBtn.style.display = 'inline-flex';
         } else {
-            trailerPlayer.src = '';
-            modalMeta.innerHTML += '<br><span style="color: #ff6b6b;">Trailer not available</span>';
+            imdbBtn.style.display = 'none';
+        }
+
+        if (item.trailer) {
+            // Convert embed URL to watch URL for external opening
+            const videoId = item.trailer.includes('embed/') 
+                ? item.trailer.split('embed/')[1].split('?')[0]
+                : '';
+            youtubeBtn.href = videoId ? `https://www.youtube.com/watch?v=${videoId}` : item.trailer;
+            youtubeBtn.style.display = 'inline-flex';
+        } else {
+            youtubeBtn.style.display = 'none';
         }
 
         // Show modal
@@ -298,10 +317,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function closeTrailerModal() {
         const modal = document.getElementById('trailer-modal');
-        const trailerPlayer = document.getElementById('trailer-player');
-
-        // Stop video
-        trailerPlayer.src = '';
 
         // Hide modal
         modal.classList.remove('active');
