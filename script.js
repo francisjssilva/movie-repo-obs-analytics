@@ -41,7 +41,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const moviesGrid = document.getElementById('movies-grid');
             const tvShowsGrid = document.getElementById('tv-shows-grid');
             moviesGrid.innerHTML = '<div class="loading-message">Loading movies from OMDB API...</div>';
-            tvShowsGrid.innerHTML = '<div class="loading-message">Loading TV shows from OMDB API...</div>';
+            tvShowsGrid.innerHTML = '';
 
             // Test API availability first
             await movieAPI.testAPIAvailability();
@@ -50,10 +50,13 @@ document.addEventListener('DOMContentLoaded', function() {
             const enrichedMovies = await movieAPI.getAllMovies(moviesData.movies, (current, total, type) => {
                 moviesGrid.innerHTML = `<div class="loading-message">Loading movies... ${current}/${total}</div>`;
             });
+            
+            // Update message to show TV shows loading
+            moviesGrid.innerHTML = '<div class="loading-message">Loading TV shows from OMDB API...</div>';
 
             // Fetch enriched TV show data
             const enrichedTVShows = await movieAPI.getAllTVShows(moviesData.tvShows, (current, total, type) => {
-                tvShowsGrid.innerHTML = `<div class="loading-message">Loading TV shows... ${current}/${total}</div>`;
+                moviesGrid.innerHTML = `<div class="loading-message">Loading TV shows... ${current}/${total}</div>`;
             });
 
             // Display enriched data
@@ -68,6 +71,7 @@ document.addEventListener('DOMContentLoaded', function() {
             console.log('✅ Data loaded successfully with OMDB API enrichment');
         } catch (error) {
             console.error('Error loading movie data:', error);
+            
             // Fallback to local data only
             allMovies = moviesData.movies;
             allTVShows = moviesData.tvShows;
