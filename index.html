@@ -35,55 +35,103 @@
             </button>
         </nav>
 
-        <!-- Filters and Sort Controls -->
-        <div class="controls">
-            <div class="filters">
-                <div class="filter-group">
-                    <label for="genre-filter">🎭 Genre:</label>
-                    <select id="genre-filter" class="filter-select">
-                        <option value="all">All Genres</option>
-                    </select>
+        <!-- Main Content Area with Sidebar -->
+        <div class="main-layout">
+            <!-- Filters Sidebar -->
+            <aside class="filters-sidebar" id="filters-sidebar">
+                <div class="sidebar-header">
+                    <h3>🏛️ Filters</h3>
+                    <button class="sidebar-toggle" id="sidebar-toggle-close">×</button>
                 </div>
-                <div class="filter-group">
-                    <label for="rating-filter">⭐ Min Rating:</label>
-                    <select id="rating-filter" class="filter-select">
-                        <option value="0">All Ratings</option>
-                        <option value="7">7.0+</option>
-                        <option value="8">8.0+</option>
-                        <option value="9">9.0+</option>
-                    </select>
-                </div>
-                <div class="filter-group">
-                    <label for="watched-filter">👁️ Status:</label>
-                    <select id="watched-filter" class="filter-select">
-                        <option value="all">All</option>
-                        <option value="watched">Watched</option>
-                        <option value="unwatched">Not Watched</option>
-                    </select>
-                </div>
-            </div>
-            <div class="sort-controls">
-                <div class="filter-group">
-                    <label for="sort-by">🔄 Sort By:</label>
-                    <select id="sort-by" class="filter-select">
-                        <option value="default">Default</option>
-                        <option value="title-asc">Title (A-Z)</option>
-                        <option value="title-desc">Title (Z-A)</option>
-                        <option value="rating-desc">Rating (High to Low)</option>
-                        <option value="rating-asc">Rating (Low to High)</option>
-                        <option value="year-desc">Year (Newest First)</option>
-                        <option value="year-asc">Year (Oldest First)</option>
-                    </select>
-                </div>
-                <button id="reset-filters" class="reset-btn">🔄 Reset</button>
-            </div>
-        </div>
+                
+                <div class="filters-container">
+                    <div class="filter-section">
+                        <label class="filter-label">🎭 Genre</label>
+                        <div class="multi-select">
+                            <button class="multi-select-btn" id="genre-select-btn">
+                                <span id="genre-selected-text">All Genres</span>
+                                <span class="dropdown-arrow">▼</span>
+                            </button>
+                            <div class="multi-select-dropdown" id="genre-dropdown">
+                                <div class="genre-options" id="genre-options"></div>
+                            </div>
+                        </div>
+                    </div>
 
-        <!-- Tab Content -->
+                    <div class="filter-section">
+                        <label for="rating-filter" class="filter-label">⭐ Min Rating</label>
+                        <select id="rating-filter" class="filter-select">
+                            <option value="0">All Ratings</option>
+                            <option value="7">7.0+</option>
+                            <option value="8">8.0+</option>
+                            <option value="9">9.0+</option>
+                        </select>
+                    </div>
+
+                    <div class="filter-section">
+                        <label for="watched-filter" class="filter-label">👁️ Status</label>
+                        <select id="watched-filter" class="filter-select">
+                            <option value="all">All</option>
+                            <option value="watched">Watched</option>
+                            <option value="unwatched">Not Watched</option>
+                        </select>
+                    </div>
+
+                    <div class="filter-section">
+                        <label for="runtime-filter" class="filter-label">⏱️ Runtime: <span id="runtime-value">Any</span></label>
+                        <input type="range" id="runtime-filter" class="runtime-slider" min="0" max="300" value="0" step="10">
+                    </div>
+
+                    <div class="filter-section">
+                        <label for="director-filter" class="filter-label">🎬 Director</label>
+                        <select id="director-filter" class="filter-select">
+                            <option value="all">All Directors</option>
+                        </select>
+                    </div>
+
+                    <div class="filter-section">
+                        <label class="filter-label">🎭 Actors</label>
+                        <div class="multi-select">
+                            <button class="multi-select-btn" id="actor-select-btn">
+                                <span id="actor-selected-text">All Actors</span>
+                                <span class="dropdown-arrow">▼</span>
+                            </button>
+                            <div class="multi-select-dropdown" id="actor-dropdown">
+                                <div class="actor-options" id="actor-options"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button id="reset-filters" class="reset-btn-sidebar">🔄 Reset All Filters</button>
+                </div>
+            </aside>
+
+            <!-- Sidebar Toggle Button (Mobile) -->
+            <button class="sidebar-toggle-btn" id="sidebar-toggle-open">
+                <span>🏛️</span> Filters
+            </button>
+
+            <!-- Content Area -->
+            <div class="content-wrapper">
+                <!-- Tab Content -->
         <main class="content">
             <!-- Movies Tab -->
             <div id="movies" class="tab-content active">
-                <h2 class="section-title">Popular Movies</h2>
+                <div class="tab-header">
+                    <h2 class="section-title">Popular Movies</h2>
+                    <div class="sort-control">
+                        <label for="sort-by">Sort:</label>
+                        <select id="sort-by" class="filter-select">
+                            <option value="default">Default</option>
+                            <option value="title-asc">Title (A-Z)</option>
+                            <option value="title-desc">Title (Z-A)</option>
+                            <option value="rating-desc">Rating (High to Low)</option>
+                            <option value="rating-asc">Rating (Low to High)</option>
+                            <option value="year-desc">Year (Newest First)</option>
+                            <option value="year-asc">Year (Oldest First)</option>
+                        </select>
+                    </div>
+                </div>
                 <div id="movies-grid" class="cards-grid">
                     <!-- Movies will be loaded here dynamically -->
                 </div>
@@ -91,7 +139,21 @@
 
             <!-- TV Shows Tab -->
             <div id="tv-shows" class="tab-content">
-                <h2 class="section-title">Trending TV Shows</h2>
+                <div class="tab-header">
+                    <h2 class="section-title">Trending TV Shows</h2>
+                    <div class="sort-control">
+                        <label for="sort-by">Sort:</label>
+                        <select id="sort-by" class="filter-select">
+                            <option value="default">Default</option>
+                            <option value="title-asc">Title (A-Z)</option>
+                            <option value="title-desc">Title (Z-A)</option>
+                            <option value="rating-desc">Rating (High to Low)</option>
+                            <option value="rating-asc">Rating (Low to High)</option>
+                            <option value="year-desc">Year (Newest First)</option>
+                            <option value="year-asc">Year (Oldest First)</option>
+                        </select>
+                    </div>
+                </div>
                 <div id="tv-shows-grid" class="cards-grid">
                     <!-- TV Shows will be loaded here dynamically -->
                 </div>
@@ -102,6 +164,8 @@
         <footer class="footer">
             <p>&copy; 2026 CineHub. Your ultimate entertainment destination.</p>
         </footer>
+            </div>
+        </div>
     </div>
     <!-- Movie Info Modal -->
     <div id="trailer-modal" class="modal">

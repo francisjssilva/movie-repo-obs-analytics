@@ -27,8 +27,10 @@ document.addEventListener('DOMContentLoaded', function() {
             this.classList.add('active');
             document.getElementById(tabId).classList.add('active');
             
-            // Update genre filter options for active tab
+            // Update filters for active tab
             updateGenreFilter();
+            updateDirectorFilter();
+            updateActorFilter();
         });
     });
 
@@ -404,17 +406,87 @@ document.addEventListener('DOMContentLoaded', function() {
     // Filter and Sort Functionality
     function initializeFilters() {
         updateGenreFilter();
+        updateDirectorFilter();
+        updateActorFilter();
         
-        const genreFilter = document.getElementById('genre-filter');
+        const genreSelectBtn = document.getElementById('genre-select-btn');
+        const genreDropdown = document.getElementById('genre-dropdown');
+        const actorSelectBtn = document.getElementById('actor-select-btn');
+        const actorDropdown = document.getElementById('actor-dropdown');
         const ratingFilter = document.getElementById('rating-filter');
         const watchedFilter = document.getElementById('watched-filter');
+        const runtimeFilter = document.getElementById('runtime-filter');
+        const runtimeValue = document.getElementById('runtime-value');
+        const directorFilter = document.getElementById('director-filter');
         const sortBy = document.getElementById('sort-by');
-        const resetBtn = document.getElementById('reset-filters');
+        const resetBtn = document.querySelector('.reset-btn-sidebar');
         
-        // Add event listeners
-        genreFilter.addEventListener('change', applyFiltersAndSort);
+        // Sidebar toggle functionality
+        const sidebarToggleOpen = document.getElementById('sidebar-toggle-open');
+        const sidebarToggleClose = document.getElementById('sidebar-toggle-close');
+        const sidebar = document.getElementById('filters-sidebar');
+        
+        if (sidebarToggleOpen && sidebarToggleClose && sidebar) {
+            sidebarToggleOpen.addEventListener('click', () => {
+                sidebar.classList.add('active');
+            });
+            
+            sidebarToggleClose.addEventListener('click', () => {
+                sidebar.classList.remove('active');
+            });
+            
+            // Close sidebar when clicking outside
+            document.addEventListener('click', (e) => {
+                if (window.innerWidth <= 1024 && 
+                    sidebar.classList.contains('active') && 
+                    !sidebar.contains(e.target) && 
+                    !sidebarToggleOpen.contains(e.target)) {
+                    sidebar.classList.remove('active');
+                }
+            });
+        }
+        
+        // Genre dropdown toggle
+        genreSelectBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            genreSelectBtn.classList.toggle('active');
+            genreDropdown.classList.toggle('active');
+            // Close actor dropdown
+            actorSelectBtn.classList.remove('active');
+            actorDropdown.classList.remove('active');
+        });
+        
+        // Actor dropdown toggle
+        actorSelectBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            actorSelectBtn.classList.toggle('active');
+            actorDropdown.classList.toggle('active');
+            // Close genre dropdown
+            genreSelectBtn.classList.remove('active');
+            genreDropdown.classList.remove('active');
+        });
+        
+        // Close dropdowns when clicking outside
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.multi-select')) {
+                genreSelectBtn.classList.remove('active');
+                genreDropdown.classList.remove('active');
+                actorSelectBtn.classList.remove('active');
+                actorDropdown.classList.remove('active');
+            }
+        });
+        
+        // Runtime slider
+        runtimeFilter.addEventListener('input', (e) => {
+            const value = e.target.value;
+            runtimeValue.textContent = value == 0 ? 'Any' : `${value}+ min`;
+            applyFiltersAndSort();
+        });
+        
+        // Add event listeners for other filters
         ratingFilter.addEventListener('change', applyFiltersAndSort);
         watchedFilter.addEventListener('change', applyFiltersAndSort);
+        directorFilter.addEventListener('change', applyFiltersAndSort);
         sortBy.addEventListener('change', applyFiltersAndSort);
         resetBtn.addEventListener('click', resetFilters);
     }
@@ -431,24 +503,135 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
         
-        // Update genre filter options
-        const genreFilter = document.getElementById('genre-filter');
-        const currentValue = genreFilter.value;
-        genreFilter.innerHTML = '<option value=\"all\">All Genres</option>';
+        // Update genre options with checkboxes
+        const genreOptions = document.getElementById('genre-options');
+        genreOptions.innerHTML = '';
+        
         Array.from(genres).sort().forEach(genre => {
-            const option = document.createElement('option');
-            option.value = genre;
-            option.textContent = genre;
-            genreFilter.appendChild(option);
+            const option = document.createElement('div');
+            option.className = 'genre-option';
+            option.innerHTML = `
+                <input type="checkbox" id="genre-${genre.replace(/\\s+/g, '-')}" value="${genre}">
+                <label for="genre-${genre.replace(/\\s+/g, '-')}">${genre}</label>
+            `;
+            genreOptions.appendChild(option);
+            
+            // Add change listener
+            const checkbox = option.querySelector('input');
+            checkbox.addEventListener('change', () => {
+                updateGenreButtonText();
+                applyFiltersAndSort();
+            });
         });
-        genreFilter.value = currentValue === 'all' ? 'all' : (Array.from(genres).includes(currentValue) ? currentValue : 'all');
+        
+        updateGenreButtonText();
+    }
+    
+    function updateGenreButtonText() {
+        const selectedGenres = getSelectedGenres();
+        const buttonText = document.getElementById('genre-selected-text');
+        
+        if (selectedGenres.length === 0) {
+            buttonText.textContent = 'All Genres';
+        } else if (selectedGenres.length === 1) {
+            buttonText.textContent = selectedGenres[0];
+        } else {
+            buttonText.textContent = `${selectedGenres.length} genres selected`;
+        }
+    }
+    
+    function getSelectedGenres() {
+        const checkboxes = document.querySelectorAll('#genre-options input[type="checkbox"]:checked');
+        return Array.from(checkboxes).map(cb => cb.value);
+    }
+    
+    function updateDirectorFilter() {
+        const activeTab = document.querySelector('.tab-btn.active').getAttribute('data-tab');
+        const data = activeTab === 'movies' ? allMovies : allTVShows;
+        
+        // Extract unique directors
+        const directors = new Set();
+        data.forEach(item => {
+            if (item.director && item.director !== 'N/A') {
+                item.director.split(',').forEach(d => directors.add(d.trim()));
+            }
+        });
+        
+        // Update director filter options
+        const directorFilter = document.getElementById('director-filter');
+        const currentValue = directorFilter.value;
+        directorFilter.innerHTML = '<option value="all">All Directors</option>';
+        Array.from(directors).sort().forEach(director => {
+            const option = document.createElement('option');
+            option.value = director;
+            option.textContent = director;
+            directorFilter.appendChild(option);
+        });
+        directorFilter.value = currentValue === 'all' ? 'all' : (Array.from(directors).includes(currentValue) ? currentValue : 'all');
+    }
+    
+    function updateActorFilter() {
+        const activeTab = document.querySelector('.tab-btn.active').getAttribute('data-tab');
+        const data = activeTab === 'movies' ? allMovies : allTVShows;
+        
+        // Extract unique actors
+        const actors = new Set();
+        data.forEach(item => {
+            if (item.actors && item.actors !== 'N/A') {
+                item.actors.split(',').forEach(a => actors.add(a.trim()));
+            }
+        });
+        
+        // Update actor options with checkboxes
+        const actorOptions = document.getElementById('actor-options');
+        actorOptions.innerHTML = '';
+        
+        Array.from(actors).sort().forEach(actor => {
+            const option = document.createElement('div');
+            option.className = 'actor-option';
+            option.innerHTML = `
+                <input type="checkbox" id="actor-${actor.replace(/\\s+/g, '-')}" value="${actor}">
+                <label for="actor-${actor.replace(/\\s+/g, '-')}">${actor}</label>
+            `;
+            actorOptions.appendChild(option);
+            
+            // Add change listener
+            const checkbox = option.querySelector('input');
+            checkbox.addEventListener('change', () => {
+                updateActorButtonText();
+                applyFiltersAndSort();
+            });
+        });
+        
+        updateActorButtonText();
+    }
+    
+    function updateActorButtonText() {
+        const selectedActors = getSelectedActors();
+        const buttonText = document.getElementById('actor-selected-text');
+        
+        if (selectedActors.length === 0) {
+            buttonText.textContent = 'All Actors';
+        } else if (selectedActors.length === 1) {
+            buttonText.textContent = selectedActors[0];
+        } else {
+            buttonText.textContent = `${selectedActors.length} actors selected`;
+        }
+    }
+    
+    function getSelectedActors() {
+        const checkboxes = document.querySelectorAll('#actor-options input[type="checkbox"]:checked');
+        return Array.from(checkboxes).map(cb => cb.value);
     }
     
     function applyFiltersAndSort() {
         const activeTab = document.querySelector('.tab-btn.active').getAttribute('data-tab');
-        const genreFilter = document.getElementById('genre-filter').value;
+        const selectedGenres = getSelectedGenres();
+        const selectedActors = getSelectedActors();
         const ratingFilter = parseFloat(document.getElementById('rating-filter').value);
         const watchedFilter = document.getElementById('watched-filter').value;
+        const runtimeFilter = parseInt(document.getElementById('runtime-filter').value);
+        const directorFilter = document.getElementById('director-filter').value;
         const sortBy = document.getElementById('sort-by').value;
         
         let data = activeTab === 'movies' ? [...allMovies] : [...allTVShows];
@@ -456,14 +639,46 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Apply filters
         data = data.filter(item => {
-            // Genre filter
-            if (genreFilter !== 'all' && !item.genre.includes(genreFilter)) {
-                return false;
+            // Genre filter - match ANY selected genre
+            if (selectedGenres.length > 0) {
+                const itemGenres = item.genre.split(',').map(g => g.trim());
+                const hasMatchingGenre = selectedGenres.some(selected => 
+                    itemGenres.includes(selected)
+                );
+                if (!hasMatchingGenre) {
+                    return false;
+                }
+            }
+            
+            // Actor filter - match ANY selected actor
+            if (selectedActors.length > 0 && item.actors && item.actors !== 'N/A') {
+                const itemActors = item.actors.split(',').map(a => a.trim());
+                const hasMatchingActor = selectedActors.some(selected => 
+                    itemActors.includes(selected)
+                );
+                if (!hasMatchingActor) {
+                    return false;
+                }
             }
             
             // Rating filter
             if (item.imdb < ratingFilter) {
                 return false;
+            }
+            
+            // Runtime filter
+            if (runtimeFilter > 0 && item.runtime) {
+                const runtime = parseInt(item.runtime);
+                if (isNaN(runtime) || runtime < runtimeFilter) {
+                    return false;
+                }
+            }
+            
+            // Director filter
+            if (directorFilter !== 'all' && item.director) {
+                if (!item.director.includes(directorFilter)) {
+                    return false;
+                }
             }
             
             // Watched filter
@@ -522,9 +737,21 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     function resetFilters() {
-        document.getElementById('genre-filter').value = 'all';
+        // Clear genre checkboxes
+        const genreCheckboxes = document.querySelectorAll('#genre-options input[type="checkbox"]');
+        genreCheckboxes.forEach(cb => cb.checked = false);
+        updateGenreButtonText();
+        
+        // Clear actor checkboxes
+        const actorCheckboxes = document.querySelectorAll('#actor-options input[type="checkbox"]');
+        actorCheckboxes.forEach(cb => cb.checked = false);
+        updateActorButtonText();
+        
         document.getElementById('rating-filter').value = '0';
         document.getElementById('watched-filter').value = 'all';
+        document.getElementById('runtime-filter').value = '0';
+        document.getElementById('runtime-value').textContent = 'Any';
+        document.getElementById('director-filter').value = 'all';
         document.getElementById('sort-by').value = 'default';
         
         const activeTab = document.querySelector('.tab-btn.active').getAttribute('data-tab');
