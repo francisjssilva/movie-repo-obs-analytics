@@ -11,6 +11,7 @@ class DatabaseService {
         this.cache = new Map();
         this.cacheExpiration = 5 * 60 * 1000; // 5 minutes cache
         this.configured = false;
+        this.supabase = null;
         
         // Check if configured
         if (this.supabaseUrl.includes('your-project') || this.supabaseKey.includes('your-anon-key')) {
@@ -19,8 +20,43 @@ class DatabaseService {
             console.log('🔗 Get credentials from: https://supabase.com/dashboard/project/_/settings/api');
         } else {
             this.configured = true;
-            console.log('✅ Supabase configured');
+            
+            // Initialize Supabase client (wait for library to load)
+            this.initializeSupabase();
         }
+    }
+    
+    // Initialize Supabase client
+    initializeSupabase() {
+        // Check if Supabase library is loaded (it exposes 'supabase' globally)
+        if (typeof window.supabase !== 'undefined' && window.supabase.createClient) {
+            // Create Supabase client
+            this.supabase = window.supabase.createClient(this.supabaseUrl, this.supabaseKey);
+            console.log('✅ Supabase client initialized');
+            
+            // Initialize auth service with Supabase client
+            if (typeof authService !== 'undefined') {
+                authService.init(this.supabase);
+                console.log('✅ Auth service initialized');
+            } else {
+                console.warn('⚠️ Auth service not found, will retry...');
+                setTimeout(() => {
+                    if (typeof authService !== 'undefined') {
+                        authService.init(this.supabase);
+                        console.log('✅ Auth service initialized (delayed)');
+                    }
+                }, 100);
+            }
+        } else {
+            // Retry after a short delay if library not loaded yet
+            console.log('⏳ Waiting for Supabase library...');
+            setTimeout(() => this.initializeSupabase(), 100);
+        }
+    }
+
+    // Get Supabase client
+    getSupabaseClient() {
+        return this.supabase;
     }
 
     // Check if Supabase is configured

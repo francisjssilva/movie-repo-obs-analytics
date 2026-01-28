@@ -6,10 +6,180 @@ document.addEventListener('DOMContentLoaded', function() {
     // Initialize watched movies from localStorage
     let watchedMovies = JSON.parse(localStorage.getItem('watchedMovies')) || [];
     let watchedTVShows = JSON.parse(localStorage.getItem('watchedTVShows')) || [];
+    let userFavorites = [];
 
     // Store all data for filtering/sorting
     let allMovies = [];
     let allTVShows = [];
+
+    // Auth UI elements
+    const authBtn = document.getElementById('auth-btn');
+    const userMenu = document.getElementById('user-menu');
+    const userEmail = document.getElementById('user-email');
+    const logoutBtn = document.getElementById('logout-btn');
+    const authModal = document.getElementById('auth-modal');
+    const closeAuthModal = document.getElementById('close-auth-modal');
+    const authForm = document.getElementById('auth-form');
+    const authEmail = document.getElementById('auth-email');
+    const authPassword = document.getElementById('auth-password');
+    const authSubmitBtn = document.getElementById('auth-submit-btn');
+    const authError = document.getElementById('auth-error');
+    const authToggleLink = document.getElementById('auth-toggle-link');
+    const authToggleText = document.getElementById('auth-toggle-text');
+    const authModalTitle = document.getElementById('auth-modal-title');
+    
+    let isSignUpMode = false;
+
+    // Auth button click
+    authBtn.addEventListener('click', () => {
+        authModal.style.display = 'flex';
+        isSignUpMode = false;
+        updateAuthModal();
+    });
+
+    // Close modal
+    closeAuthModal.addEventListener('click', () => {
+        authModal.style.display = 'none';
+        authError.style.display = 'none';
+    });
+
+    // Click outside modal
+    authModal.addEventListener('click', (e) => {
+        if (e.target === authModal) {
+            authModal.style.display = 'none';
+            authError.style.display = 'none';
+        }
+    });
+
+    // Toggle between login/signup
+    authToggleLink.addEventListener('click', (e) => {
+        e.preventDefault();
+        isSignUpMode = !isSignUpMode;
+        updateAuthModal();
+    });
+
+    // Update auth modal text
+    function updateAuthModal() {
+        if (isSignUpMode) {
+            authModalTitle.textContent = 'Sign Up for CineHub';
+            authSubmitBtn.textContent = 'Sign Up';
+            authToggleText.textContent = 'Already have an account?';
+            authToggleLink.textContent = 'Login';
+        } else {
+            authModalTitle.textContent = 'Login to CineHub';
+            authSubmitBtn.textContent = 'Login';
+            authToggleText.textContent = "Don't have an account?";
+            authToggleLink.textContent = 'Sign up';
+        }
+        authError.style.display = 'none';
+    }
+
+    // Handle auth form submission
+    authSubmitBtn.addEventListener('click', async () => {
+        const email = authEmail.value.trim();
+        const password = authPassword.value;
+
+        if (!email || !password) {
+            showAuthError('Please enter email and password');
+            return;
+        }
+
+        authSubmitBtn.disabled = true;
+        authSubmitBtn.textContent = isSignUpMode ? 'Signing up...' : 'Logging in...';
+
+        let result;
+        if (isSignUpMode) {
+            result = await authService.signUp(email, password);
+            if (result.success) {
+                showAuthError('Check your email to confirm your account!', false);
+                setTimeout(() => {
+                    authModal.style.display = 'none';
+                    authEmail.value = '';
+                    authPassword.value = '';
+                }, 2000);
+            }
+        } else {
+            result = await authService.signIn(email, password);
+            if (result.success) {
+                authModal.style.display = 'none';
+                authEmail.value = '';
+                authPassword.value = '';
+            }
+        }
+
+        if (!result.success) {
+            showAuthError(result.error);
+        }
+
+        authSubmitBtn.disabled = false;
+        authSubmitBtn.textContent = isSignUpMode ? 'Sign Up' : 'Login';
+    });
+
+    // Show auth error
+    function showAuthError(message, isError = true) {
+        authError.textContent = message;
+        authError.style.display = 'block';
+        authError.style.color = isError ? '#ff6b6b' : '#5cd85a';
+    }
+
+    // Logout
+    logoutBtn.addEventListener('click', async () => {
+        await authService.signOut();
+    });
+
+    // Listen for auth state changes
+    authService.onAuthChange((user) => {
+        if (user) {
+            authBtn.style.display = 'none';
+            userMenu.style.display = 'flex';
+            userEmail.textContent = user.email;
+            loadUserData();
+        } else {
+            authBtn.style.display = 'block';
+            userMenu.style.display = 'none';
+            userFavorites = [];
+            // Keep localStorage watched items when logged out
+            watchedMovies = JSON.parse(localStorage.getItem('watchedMovies')) || [];
+            watchedTVShows = JSON.parse(localStorage.getItem('watchedTVShows')) || [];
+        }
+    });
+
+    // Load user favorites
+    async function loadUserFavorites() {
+        const result = await authService.getFavorites();
+        if (result.success) {
+            userFavorites = result.data.map(fav => fav.movie_id);
+        }
+    }
+
+    // Load user watched items
+    async function loadUserWatched() {
+        const result = await authService.getWatched();
+        if (result.success) {
+            // Separate watched items by type
+            watchedMovies = result.data
+                .filter(item => item.item_type === 'movie')
+                .map(item => item.item_id);
+            watchedTVShows = result.data
+                .filter(item => item.item_type === 'tv')
+                .map(item => item.item_id);
+            
+            console.log(`📺 Loaded ${watchedMovies.length} watched movies, ${watchedTVShows.length} watched TV shows`);
+        }
+        
+        // Refresh display
+        if (document.getElementById('movies').classList.contains('active')) {
+            displayMovies(allMovies);
+        } else {
+            displayTVShows(allTVShows);
+        }
+    }
+
+    // Load user data (favorites and watched)
+    async function loadUserData() {
+        await loadUserFavorites();
+        await loadUserWatched();
+    }
 
     // Load movie data
     loadMovieData();
@@ -168,7 +338,10 @@ document.addEventListener('DOMContentLoaded', function() {
         card.setAttribute('data-id', item.id);
         card.setAttribute('data-type', type);
         
+        const isFavorite = userFavorites.includes(item.id);
+        
         card.innerHTML = `
+            ${authService.isAuthenticated() ? `<button class="favorite-btn ${isFavorite ? 'active' : ''}" data-id="${item.id}" data-type="${type}">❤</button>` : ''}
             <div class="card-poster">
                 ${item.poster ? `<img src="${item.poster}" alt="${item.title}" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">` : ''}
                 <div class="poster-placeholder" style="${item.poster ? 'display:none;' : ''}">🎬</div>
@@ -188,6 +361,15 @@ document.addEventListener('DOMContentLoaded', function() {
             </div>
         `;
         
+        // Add favorite button event listener
+        const favoriteBtn = card.querySelector('.favorite-btn');
+        if (favoriteBtn) {
+            favoriteBtn.addEventListener('click', async function(e) {
+                e.stopPropagation();
+                await toggleFavorite(item, this);
+            });
+        }
+        
         // Add watch button event listener
         const watchBtn = card.querySelector('.watch-btn');
         watchBtn.addEventListener('click', function(e) {
@@ -197,8 +379,8 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Add card click to open trailer modal
         card.addEventListener('click', function(e) {
-            // Don't open modal if clicking the watch button
-            if (!e.target.closest('.watch-btn')) {
+            // Don't open modal if clicking buttons
+            if (!e.target.closest('.watch-btn') && !e.target.closest('.favorite-btn')) {
                 openTrailerModal(item);
             }
         });
@@ -212,7 +394,39 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // Toggle watched status
-    function toggleWatched(id, type, button) {
+    // Toggle favorite
+    async function toggleFavorite(item, button) {
+        if (!authService.isAuthenticated()) {
+            showNotification('Please login to add favorites');
+            authModal.style.display = 'flex';
+            return;
+        }
+
+        const isFavorite = userFavorites.includes(item.id);
+        
+        if (isFavorite) {
+            const result = await authService.removeFromFavorites(item.id);
+            if (result.success) {
+                userFavorites = userFavorites.filter(id => id !== item.id);
+                button.classList.remove('active');
+                showNotification('Removed from favorites');
+            }
+        } else {
+            const result = await authService.addToFavorites(item.id, item);
+            if (result.success) {
+                userFavorites.push(item.id);
+                button.classList.add('active');
+                showNotification('Added to favorites! ❤️');
+            }
+        }
+    }
+
+    async function toggleWatched(id, type, button) {
+        const isWatched = type === 'movie' ? watchedMovies.includes(id) : watchedTVShows.includes(id);
+        const itemData = type === 'movie' 
+            ? allMovies.find(m => m.id === id)
+            : allTVShows.find(s => s.id === id);
+        
         if (type === 'movie') {
             const index = watchedMovies.indexOf(id);
             if (index > -1) {
@@ -221,12 +435,22 @@ document.addEventListener('DOMContentLoaded', function() {
                 button.querySelector('.btn-icon').textContent = '👁';
                 button.querySelector('.btn-text').textContent = 'Mark as Watched';
                 showNotification('Removed from watched list');
+                
+                // Sync to database if logged in
+                if (authService.isAuthenticated()) {
+                    await authService.removeFromWatched(id, 'movie');
+                }
             } else {
                 watchedMovies.push(id);
                 button.classList.add('watched');
                 button.querySelector('.btn-icon').textContent = '✓';
                 button.querySelector('.btn-text').textContent = 'Watched';
                 showNotification('Added to watched list! 🎉');
+                
+                // Sync to database if logged in
+                if (authService.isAuthenticated()) {
+                    await authService.addToWatched(id, 'movie', itemData);
+                }
             }
             localStorage.setItem('watchedMovies', JSON.stringify(watchedMovies));
         } else {
@@ -237,12 +461,22 @@ document.addEventListener('DOMContentLoaded', function() {
                 button.querySelector('.btn-icon').textContent = '👁';
                 button.querySelector('.btn-text').textContent = 'Mark as Watched';
                 showNotification('Removed from watched list');
+                
+                // Sync to database if logged in
+                if (authService.isAuthenticated()) {
+                    await authService.removeFromWatched(id, 'tv');
+                }
             } else {
                 watchedTVShows.push(id);
                 button.classList.add('watched');
                 button.querySelector('.btn-icon').textContent = '✓';
                 button.querySelector('.btn-text').textContent = 'Watched';
                 showNotification('Added to watched list! 🎉');
+                
+                // Sync to database if logged in
+                if (authService.isAuthenticated()) {
+                    await authService.addToWatched(id, 'tv', itemData);
+                }
             }
             localStorage.setItem('watchedTVShows', JSON.stringify(watchedTVShows));
         }

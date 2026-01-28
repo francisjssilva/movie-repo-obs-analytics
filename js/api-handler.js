@@ -3,7 +3,8 @@
 
 class APIHandler {
     constructor() {
-        this.apiKey = '550196'; // OMDB API key
+        //550196
+        this.apiKey = 'da5c7fa5'; // OMDB API key
         this.baseUrl = 'https://www.omdbapi.com/';
         this.cache = new Map();
         this.cacheExpiration = 5 * 60 * 1000; // 5 minutes cache
