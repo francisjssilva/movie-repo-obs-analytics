@@ -203,6 +203,10 @@ body {
     border-color: rgba(72, 219, 251, 0.5);
 }
 
+.card-info {
+    padding: 20px;
+}
+
 .card-poster {
     height: 450px;
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
