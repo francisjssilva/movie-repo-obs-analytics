@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CineHub - Movies & TV Shows</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <div class="logo">
+                <span class="logo-icon">🎬</span>
+                <h1>CineHub</h1>
+            </div>
+            <div class="search-bar">
+                <input type="text" placeholder="Search movies or TV shows..." class="search-input">
+                <button class="search-btn">🔍</button>
+            </div>
+        </header>
+
+        <!-- Tabs Navigation -->
+        <nav class="tabs">
+            <button class="tab-btn active" data-tab="movies">
+                <span class="tab-icon">🎥</span>
+                Movies
+            </button>
+            <button class="tab-btn" data-tab="tv-shows">
+                <span class="tab-icon">📺</span>
+                TV Shows
+            </button>
+        </nav>
+
+        <!-- Tab Content -->
+        <main class="content">
+            <!-- Movies Tab -->
+            <div id="movies" class="tab-content active">
+                <h2 class="section-title">Popular Movies</h2>
+                <div id="movies-grid" class="cards-grid">
+                    <!-- Movies will be loaded here dynamically -->
+                </div>
+            </div>
+
+            <!-- TV Shows Tab -->
+            <div id="tv-shows" class="tab-content">
+                <h2 class="section-title">Trending TV Shows</h2>
+                <div id="tv-shows-grid" class="cards-grid">
+                    <!-- TV Shows will be loaded here dynamically -->
+                </div>
+            </div>
+        </main>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <p>&copy; 2026 CineHub. Your ultimate entertainment destination.</p>
+        </footer>
+    </div>
+
+    <script src="data/movies-data.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
