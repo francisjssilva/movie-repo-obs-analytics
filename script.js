@@ -26,13 +26,39 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     // Load movie data
-    function loadMovieData() {
+    async function loadMovieData() {
         try {
-            displayMovies(moviesData.movies);
-            displayTVShows(moviesData.tvShows);
+            // Show loading indicator
+            const moviesGrid = document.getElementById('movies-grid');
+            const tvShowsGrid = document.getElementById('tv-shows-grid');
+            moviesGrid.innerHTML = '<div class="loading-message">Loading movies from OMDB API...</div>';
+            tvShowsGrid.innerHTML = '<div class="loading-message">Loading TV shows from OMDB API...</div>';
+
+            // Test API availability first
+            await movieAPI.testAPIAvailability();
+
+            // Fetch enriched movie data
+            const enrichedMovies = await movieAPI.getAllMovies(moviesData.movies, (current, total, type) => {
+                moviesGrid.innerHTML = `<div class="loading-message">Loading movies... ${current}/${total}</div>`;
+            });
+
+            // Fetch enriched TV show data
+            const enrichedTVShows = await movieAPI.getAllTVShows(moviesData.tvShows, (current, total, type) => {
+                tvShowsGrid.innerHTML = `<div class="loading-message">Loading TV shows... ${current}/${total}</div>`;
+            });
+
+            // Display enriched data
+            displayMovies(enrichedMovies);
+            displayTVShows(enrichedTVShows);
+
+            console.log('✅ Data loaded successfully with OMDB API enrichment');
         } catch (error) {
             console.error('Error loading movie data:', error);
-            showNotification('Error loading movie data. Please check the console.');
+            // Fallback to local data only
+            displayMovies(moviesData.movies);
+            displayTVShows(moviesData.tvShows);
+            showNotification('⚠️ Using local data only (API unavailable)');
+            console.warn('⚠️ Using local data only (API unavailable)');
         }
     }
 
