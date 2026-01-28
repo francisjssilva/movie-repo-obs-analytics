@@ -40,33 +40,43 @@ document.addEventListener('DOMContentLoaded', function() {
             // Show loading indicator
             const moviesGrid = document.getElementById('movies-grid');
             const tvShowsGrid = document.getElementById('tv-shows-grid');
-            moviesGrid.innerHTML = '<div class="loading-message">Loading movies from OMDB API...</div>';
+            moviesGrid.innerHTML = '<div class="loading-message">Loading movies catalog...</div>';
             tvShowsGrid.innerHTML = '<div class="loading-message">Loading TV shows...</div>';
 
-            // Test API availability first
-            await movieAPI.testAPIAvailability();
-
-            // Fetch enriched movie data
-            const enrichedMovies = await movieAPI.getAllMovies(moviesData.movies, (current, total, type) => {
-                moviesGrid.innerHTML = `<div class="loading-message">Loading movies... ${current}/${total}</div>`;
+            console.log('🗄️ Loading catalog from database...');
+            
+            // Fetch catalog from database
+            const moviesCatalog = await dbService.getMovies();
+            const tvShowsCatalog = await dbService.getTVShows();
+            
+            console.log(`📋 Got ${moviesCatalog.length} movies and ${tvShowsCatalog.length} TV shows from catalog`);
+            
+            // Enrich movies with OMDB API data (search by title + year)
+            console.log('🌐 Enriching movies from OMDB API...');
+            moviesGrid.innerHTML = '<div class="loading-message">Enriching movies from OMDB API (0/' + moviesCatalog.length + ')...</div>';
+            
+            const enrichedMovies = await apiHandler.enrichMoviesFromCatalog(moviesCatalog, (current, total) => {
+                moviesGrid.innerHTML = `<div class="loading-message">Enriching movies from OMDB API (${current}/${total})...</div>`;
             });
             
-            // Display movies immediately once loaded
+            // Display movies immediately
             allMovies = enrichedMovies;
             displayMovies(enrichedMovies);
             
             // Initialize filters now that movies are ready
             initializeFilters();
             
-            // Show notification that TV shows are still loading
-            showNotification('📺 Loading TV shows in background...');
-
-            // Fetch enriched TV show data in background
-            const enrichedTVShows = await movieAPI.getAllTVShows(moviesData.tvShows, (current, total, type) => {
-                tvShowsGrid.innerHTML = `<div class="loading-message">Loading TV shows... ${current}/${total}</div>`;
+            // Enrich TV shows with OMDB API data (search by title + year)
+            console.log('🌐 Enriching TV shows from OMDB API...');
+            tvShowsGrid.innerHTML = '<div class="loading-message">Enriching TV shows from OMDB API (0/' + tvShowsCatalog.length + ')...</div>';
+            
+            const enrichedTVShows = await apiHandler.enrichMoviesFromCatalog(tvShowsCatalog, (current, total) => {
+                tvShowsGrid.innerHTML = `<div class="loading-message">Enriching TV shows from OMDB API (${current}/${total})...</div>`;
             });
-
-            // Display TV shows once loaded
+            
+            console.log(`📺 Enriched ${enrichedTVShows.length} TV shows`);
+            
+            // Display TV shows
             allTVShows = enrichedTVShows;
             displayTVShows(enrichedTVShows);
             
@@ -74,26 +84,60 @@ document.addEventListener('DOMContentLoaded', function() {
             updateGenreFilter();
             updateDirectorFilter();
             updateActorFilter();
-
-            console.log('✅ Data loaded successfully with OMDB API enrichment');
+            
+            console.log('✅ Data loaded successfully from OMDB API');
+            showNotification('✅ Loaded from OMDB API');
+            
         } catch (error) {
-            console.error('Error loading movie data:', error);
+            console.error('❌ Error loading data:', error);
             
-            // Fallback to local data only
-            allMovies = moviesData.movies;
-            allTVShows = moviesData.tvShows;
-            displayMovies(moviesData.movies);
-            displayTVShows(moviesData.tvShows);
+            const moviesGrid = document.getElementById('movies-grid');
+            const tvShowsGrid = document.getElementById('tv-shows-grid');
             
-            // Initialize filters
-            initializeFilters();
-            
-            showNotification('⚠️ Using local data only (API unavailable)');
-            console.warn('⚠️ Using local data only (API unavailable)');
+            // If database not configured, show helpful setup message
+            if (error.message && error.message.includes('not configured')) {
+                const setupMessage = `
+                    <div style="padding: 40px; text-align: center; max-width: 600px; margin: 0 auto;">
+                        <h2 style="color: #48dbfb; margin-bottom: 20px;">⚙️ Database Setup Optional</h2>
+                        <p style="color: rgba(255,255,255,0.8); margin-bottom: 20px; line-height: 1.6;">
+                            The database is used as a catalog of movies to fetch. Configure it to enable the full experience.
+                        </p>
+                        <div style="background: rgba(255,255,255,0.1); padding: 20px; border-radius: 10px; text-align: left;">
+                            <h3 style="color: #feca57; margin-bottom: 15px;">Quick Setup:</h3>
+                            <ol style="color: rgba(255,255,255,0.9); line-height: 1.8;">
+                                <li>Create free account at <a href="https://supabase.com" target="_blank" style="color: #48dbfb;">supabase.com</a></li>
+                                <li>Run <code style="background: rgba(0,0,0,0.3); padding: 2px 6px; border-radius: 4px;">database/schema.sql</code> and <code style="background: rgba(0,0,0,0.3); padding: 2px 6px; border-radius: 4px;">seed.sql</code> in SQL Editor</li>
+                                <li>Get your Project URL and anon key from Settings → API</li>
+                                <li>Update <code style="background: rgba(0,0,0,0.3); padding: 2px 6px; border-radius: 4px;">db-service.js</code> lines 8-9 with your credentials</li>
+                            </ol>
+                        </div>
+                        <p style="margin-top: 20px;">
+                            <a href="GITHUB_PAGES_SETUP.md" target="_blank" style="color: #ff6b6b; text-decoration: none; font-weight: 600;">
+                                📖 View Full Setup Guide
+                            </a>
+                        </p>
+                    </div>
+                `;
+                moviesGrid.innerHTML = setupMessage;
+                tvShowsGrid.innerHTML = '';
+            } else {
+                // Generic error
+                const errorMessage = `
+                    <div style="padding: 40px; text-align: center;">
+                        <h2 style="color: #ff6b6b;">❌ Error Loading Data</h2>
+                        <p style="color: rgba(255,255,255,0.7); margin-top: 15px;">${error.message}</p>
+                        <button onclick="location.reload()" style="margin-top: 20px; padding: 10px 20px; background: #48dbfb; border: none; border-radius: 5px; color: #0f0f23; cursor: pointer; font-weight: 600;">
+                            Retry
+                        </button>
+                    </div>
+                `;
+                moviesGrid.innerHTML = errorMessage;
+                tvShowsGrid.innerHTML = '';
+            }
         }
     }
 
-    // Display movies
+    // Display movies in the grid
     function displayMovies(movies) {
         const moviesGrid = document.getElementById('movies-grid');
         moviesGrid.innerHTML = '';

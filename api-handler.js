@@ -1,350 +1,274 @@
-// OMDB API Handler with fallback to local data
-const API_KEY = '550196';
-const OMDB_BASE_URL = 'https://www.omdbapi.com/';
+// API Handler for CineHub
+// Handles OMDB API requests with caching and rate limiting
 
-class MovieAPIHandler {
+class APIHandler {
     constructor() {
+        this.apiKey = '550196'; // OMDB API key
+        this.baseUrl = 'https://www.omdbapi.com/';
         this.cache = new Map();
-        this.apiAvailable = true;
-        this.cacheExpiration = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
-        this.cacheKey = 'omdb_movie_cache';
+        this.cacheExpiration = 5 * 60 * 1000; // 5 minutes cache
+        this.requestDelay = 200; // 200ms delay between requests
+        this.lastRequestTime = 0;
+        
+        // Load cache from localStorage
         this.loadCacheFromStorage();
     }
-
+    
     // Load cache from localStorage
     loadCacheFromStorage() {
         try {
-            const storedCache = localStorage.getItem(this.cacheKey);
-            if (storedCache) {
-                const { data, timestamp } = JSON.parse(storedCache);
+            const stored = localStorage.getItem('omdb_cache');
+            if (stored) {
+                const parsed = JSON.parse(stored);
                 const now = Date.now();
+                let loadedCount = 0;
+                let expiredCount = 0;
                 
-                // Check if cache is still valid
-                if (now - timestamp < this.cacheExpiration) {
-                    console.log('📦 Loading cached data from localStorage...');
-                    Object.entries(data).forEach(([key, value]) => {
+                // Restore only non-expired entries
+                Object.entries(parsed).forEach(([key, value]) => {
+                    if (now - value.timestamp < this.cacheExpiration) {
                         this.cache.set(key, value);
-                    });
-                    console.log(`✅ Loaded ${this.cache.size} items from cache`);
-                } else {
-                    console.log('⏰ Cache expired, will fetch fresh data');
-                    localStorage.removeItem(this.cacheKey);
-                }
+                        loadedCount++;
+                    } else {
+                        expiredCount++;
+                    }
+                });
+                
+                console.log(`📦 Loaded ${loadedCount} cached items from storage (${expiredCount} expired)`);
+            } else {
+                console.log('📦 No cache found in storage');
             }
         } catch (error) {
-            console.warn('⚠️ Failed to load cache from storage:', error.message);
+            console.warn('⚠️ Failed to load cache from storage:', error);
         }
     }
-
+    
     // Save cache to localStorage
     saveCacheToStorage() {
         try {
-            const cacheData = {};
+            const cacheObject = {};
             this.cache.forEach((value, key) => {
-                cacheData[key] = value;
+                cacheObject[key] = value;
             });
-            
-            const cacheObject = {
-                data: cacheData,
-                timestamp: Date.now()
-            };
-            
-            localStorage.setItem(this.cacheKey, JSON.stringify(cacheObject));
-            console.log(`💾 Saved ${this.cache.size} items to localStorage cache`);
+            localStorage.setItem('omdb_cache', JSON.stringify(cacheObject));
         } catch (error) {
-            console.warn('⚠️ Failed to save cache to storage:', error.message);
+            console.warn('⚠️ Failed to save cache to storage:', error);
         }
     }
 
-    // Fetch movie data from OMDB API by title
-    async fetchFromOMDB(title, year) {
-        try {
-            const params = new URLSearchParams({
-                apikey: API_KEY,
-                t: title,
-                type: 'movie',
-                plot: 'short'
-            });
-
-            if (year) {
-                params.append('y', year);
-            }
-
-            const url = `${OMDB_BASE_URL}?${params}`;
-            console.log(`🔍 Fetching from OMDB: ${title} (${year})`);
-            
-            const response = await fetch(url);
-            
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-
-            const data = await response.json();
-            
-            console.log(`📦 OMDB Response for "${title}":`, data);
-
-            if (data.Response === 'False') {
-                console.warn(`❌ OMDB API returned error for "${title}":`, data.Error);
-                throw new Error(data.Error || 'Movie not found');
-            }
-
-            console.log(`✅ Successfully fetched "${title}" from OMDB`);
-            return this.transformOMDBData(data);
-        } catch (error) {
-            console.warn(`❌ OMDB API failed for "${title}":`, error.message);
-            return null;
+    // Rate limiting - wait if needed
+    async waitForRateLimit() {
+        const now = Date.now();
+        const timeSinceLastRequest = now - this.lastRequestTime;
+        
+        if (timeSinceLastRequest < this.requestDelay) {
+            const waitTime = this.requestDelay - timeSinceLastRequest;
+            await new Promise(resolve => setTimeout(resolve, waitTime));
         }
+        
+        this.lastRequestTime = Date.now();
     }
 
-    // Fetch TV show data from OMDB API
-    async fetchTVShowFromOMDB(title, year) {
-        try {
-            const params = new URLSearchParams({
-                apikey: API_KEY,
-                t: title,
-                type: 'series',
-                plot: 'short'
-            });
-
-            if (year) {
-                const startYear = year.toString().split('-')[0];
-                params.append('y', startYear);
+    // Search for movie by title and year
+    async searchMovie(title, year) {
+        // Parse and validate year
+        let validYear = null;
+        if (year) {
+            // Extract first 4-digit year from formats like "2014-2019" or "2014-"
+            const yearMatch = String(year).match(/(\d{4})/);
+            if (yearMatch && yearMatch[1] >= 1900 && yearMatch[1] <= 2100) {
+                validYear = yearMatch[1];
             }
-
-            const url = `${OMDB_BASE_URL}?${params}`;
-            console.log(`🔍 Fetching TV show from OMDB: ${title} (${year})`);
-            
-            const response = await fetch(url);
-            
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-
-            const data = await response.json();
-            
-            console.log(`📦 OMDB Response for TV "${title}":`, data);
-
-            if (data.Response === 'False') {
-                console.warn(`❌ OMDB API returned error for TV "${title}":`, data.Error);
-                throw new Error(data.Error || 'TV show not found');
-            }
-
-            console.log(`✅ Successfully fetched TV "${title}" from OMDB`);
-            return this.transformOMDBData(data);
-        } catch (error) {
-            console.warn(`❌ OMDB API failed for TV show "${title}":`, error.message);
-            return null;
         }
-    }
-
-    // Transform OMDB API data to our format
-    transformOMDBData(omdbData) {
-        return {
-            title: omdbData.Title,
-            year: omdbData.Year,
-            genre: omdbData.Genre,
-            imdb: parseFloat(omdbData.imdbRating) || 0,
-            description: omdbData.Plot !== 'N/A' ? omdbData.Plot : '',
-            poster: omdbData.Poster !== 'N/A' ? omdbData.Poster : '',
-            director: omdbData.Director,
-            actors: omdbData.Actors,
-            runtime: omdbData.Runtime,
-            rated: omdbData.Rated,
-            awards: omdbData.Awards,
-            imdbID: omdbData.imdbID,
-            // Generate IMDb video gallery link
-            imdbVideoGallery: omdbData.imdbID ? `https://www.imdb.com/title/${omdbData.imdbID}/videogallery/` : null
-        };
-    }
-
-    // Merge OMDB data with local data
-    mergeData(localData, omdbData) {
-        if (!omdbData) return localData;
-
-        return {
-            ...localData,
-            // Keep local data as base
-            title: omdbData.title || localData.title,
-            year: omdbData.year || localData.year,
-            genre: omdbData.genre || localData.genre,
-            imdb: omdbData.imdb || localData.imdb,
-            description: omdbData.description || localData.description,
-            // Prefer OMDB poster if available and valid
-            poster: (omdbData.poster && omdbData.poster !== 'N/A') ? omdbData.poster : localData.poster,
-            // Keep local YouTube trailer link (primary)
-            trailer: localData.trailer,
-            // Add IMDb video gallery as backup/alternative
-            imdbVideoGallery: omdbData.imdbVideoGallery,
-            imdbID: omdbData.imdbID,
-            // Add extra OMDB data
-            director: omdbData.director,
-            actors: omdbData.actors,
-            runtime: omdbData.runtime,
-            rated: omdbData.rated,
-            awards: omdbData.awards
-        };
-    }
-
-    // Fetch single movie with fallback
-    async getMovie(localMovie) {
-        const cacheKey = `movie-${localMovie.id}`;
+        
+        const cacheKey = `${title}_${validYear || 'any'}`;
         
         // Check cache first
-        if (this.cache.has(cacheKey)) {
-            return this.cache.get(cacheKey);
+        const cached = this.cache.get(cacheKey);
+        if (cached && Date.now() - cached.timestamp < this.cacheExpiration) {
+            console.log(`📦 Cache HIT: ${title} (${validYear || 'any year'})`);
+            return cached.data;
         }
 
-        // Try OMDB API if available
-        if (this.apiAvailable) {
-            const omdbData = await this.fetchFromOMDB(localMovie.title, localMovie.year);
-            const mergedData = this.mergeData(localMovie, omdbData);
-            this.cache.set(cacheKey, mergedData);
-            return mergedData;
-        }
+        // Rate limiting
+        await this.waitForRateLimit();
 
-        // Fallback to local data
-        this.cache.set(cacheKey, localMovie);
-        return localMovie;
-    }
-
-    // Fetch single TV show with fallback
-    async getTVShow(localShow) {
-        const cacheKey = `tv-${localShow.id}`;
+        console.log(`🌐 Cache MISS - Fetching: ${title} (${validYear || 'any year'})`);
         
-        // Check cache first
-        if (this.cache.has(cacheKey)) {
-            return this.cache.get(cacheKey);
-        }
-
-        // Try OMDB API if available
-        if (this.apiAvailable) {
-            const omdbData = await this.fetchTVShowFromOMDB(localShow.title, localShow.year);
-            const mergedData = this.mergeData(localShow, omdbData);
-            this.cache.set(cacheKey, mergedData);
-            return mergedData;
-        }
-
-        // Fallback to local data
-        this.cache.set(cacheKey, localShow);
-        return localShow;
-    }
-
-    // Fetch all movies with progress tracking
-    async getAllMovies(localMovies, onProgress) {
-        // Check if all movies are already cached
-        const allCached = localMovies.every(movie => this.cache.has(`movie-${movie.id}`));
-        
-        if (allCached) {
-            console.log('⚡ All movies found in cache, loading instantly...');
-            const enrichedMovies = localMovies.map(movie => this.cache.get(`movie-${movie.id}`));
-            console.log(`✅ Loaded ${enrichedMovies.length} movies from cache`);
-            return enrichedMovies;
+        // Build URL with or without year
+        let url = `${this.baseUrl}?apikey=${this.apiKey}&t=${encodeURIComponent(title)}&plot=full`;
+        if (validYear) {
+            url += `&y=${validYear}`;
         }
         
-        const enrichedMovies = [];
-        console.log(`📊 Starting to fetch ${localMovies.length} movies from OMDB...`);
-        
-        for (let i = 0; i < localMovies.length; i++) {
-            try {
-                const wasCached = this.cache.has(`movie-${localMovies[i].id}`);
-                const movie = await this.getMovie(localMovies[i]);
-                enrichedMovies.push(movie);
-                
-                if (onProgress) {
-                    onProgress(i + 1, localMovies.length, 'movies');
-                }
-                
-                // Only delay if we made an API request (not cached)
-                if (!wasCached) {
-                    await this.delay(10);
-                }
-            } catch (error) {
-                console.error(`❌ Error fetching movie ${localMovies[i].title}:`, error);
-                // Use local data as fallback
-                enrichedMovies.push(localMovies[i]);
-            }
-        }
-        
-        console.log(`✅ Finished fetching ${enrichedMovies.length} movies`);
-        
-        // Save cache to localStorage
-        this.saveCacheToStorage();
-        
-        return enrichedMovies;
-    }
-
-    // Fetch all TV shows with progress tracking
-    async getAllTVShows(localShows, onProgress) {
-        // Check if all TV shows are already cached
-        const allCached = localShows.every(show => this.cache.has(`tv-${show.id}`));
-        
-        if (allCached) {
-            console.log('⚡ All TV shows found in cache, loading instantly...');
-            const enrichedShows = localShows.map(show => this.cache.get(`tv-${show.id}`));
-            console.log(`✅ Loaded ${enrichedShows.length} TV shows from cache`);
-            return enrichedShows;
-        }
-        
-        const enrichedShows = [];
-        console.log(`📊 Starting to fetch ${localShows.length} TV shows from OMDB...`);
-        
-        for (let i = 0; i < localShows.length; i++) {
-            try {
-                const wasCached = this.cache.has(`tv-${localShows[i].id}`);
-                const show = await this.getTVShow(localShows[i]);
-                enrichedShows.push(show);
-                
-                if (onProgress) {
-                    onProgress(i + 1, localShows.length, 'tvShows');
-                }
-                
-                // Only delay if we made an API request (not cached)
-                if (!wasCached) {
-                    await this.delay(200);
-                }
-            } catch (error) {
-                console.error(`❌ Error fetching TV show ${localShows[i].title}:`, error);
-                // Use local data as fallback
-                enrichedShows.push(localShows[i]);
-            }
-        }
-        
-        console.log(`✅ Finished fetching ${enrichedShows.length} TV shows`);
-        
-        // Save cache to localStorage
-        this.saveCacheToStorage();
-        
-        return enrichedShows;
-    }
-
-    // Test API availability
-    async testAPIAvailability() {
         try {
-            console.log('🧪 Testing OMDB API availability...');
-            const response = await fetch(`${OMDB_BASE_URL}?apikey=${API_KEY}&t=Inception&y=2010`);
+            const response = await fetch(url);
             const data = await response.json();
             
-            this.apiAvailable = response.ok && data.Response !== 'False';
-            
-            if (this.apiAvailable) {
-                console.log('✅ OMDB API is available and working');
+            if (data.Response === 'True') {
+                // Transform OMDB response to our format
+                const movieData = {
+                    id: data.imdbID,
+                    title: data.Title,
+                    year: parseInt(data.Year),
+                    genre: data.Genre,
+                    imdb: parseFloat(data.imdbRating) || 0,
+                    description: data.Plot,
+                    poster: data.Poster !== 'N/A' ? data.Poster : null,
+                    trailer: null, // Will be merged from DB
+                    director: data.Director !== 'N/A' ? data.Director : null,
+                    actors: data.Actors !== 'N/A' ? data.Actors : null,
+                    runtime: data.Runtime !== 'N/A' ? data.Runtime : null,
+                    rated: data.Rated !== 'N/A' ? data.Rated : null,
+                    imdbID: data.imdbID
+                };
+
+                // Cache the result
+                this.cache.set(cacheKey, {
+                    data: movieData,
+                    timestamp: Date.now()
+                });
+
+                return movieData;
             } else {
-                console.warn('⚠️ OMDB API test failed:', data.Error || 'Unknown error');
+                console.warn(`⚠️ OMDB API: ${title} not found`);
+                return null;
             }
-            
-            return this.apiAvailable;
         } catch (error) {
-            console.error('❌ OMDB API is not available:', error.message);
-            this.apiAvailable = false;
-            return false;
+            console.error(`❌ Error searching OMDB for ${title}:`, error);
+            return null;
         }
     }
 
-    // Helper delay function
-    delay(ms) {
-        return new Promise(resolve => setTimeout(resolve, ms));
+    // Fetch movie details by IMDb ID
+    async fetchMovieDetails(imdbID) {
+        // Check cache first
+        const cached = this.cache.get(imdbID);
+        if (cached && Date.now() - cached.timestamp < this.cacheExpiration) {
+            console.log(`📦 Using cached data for ${imdbID}`);
+            return cached.data;
+        }
+
+        // Rate limiting
+        await this.waitForRateLimit();
+
+        console.log(`🌐 Fetching from OMDB API: ${imdbID}`);
+        
+        const url = `${this.baseUrl}?apikey=${this.apiKey}&i=${imdbID}&plot=full`;
+        
+        try {
+            const response = await fetch(url);
+            const data = await response.json();
+            
+            if (data.Response === 'True') {
+                // Transform OMDB response to our format
+                const movieData = {
+                    id: imdbID,
+                    title: data.Title,
+                    year: parseInt(data.Year),
+                    genre: data.Genre,
+                    imdb: parseFloat(data.imdbRating) || 0,
+                    description: data.Plot,
+                    poster: data.Poster !== 'N/A' ? data.Poster : null,
+                    trailer: null,
+                    director: data.Director !== 'N/A' ? data.Director : null,
+                    actors: data.Actors !== 'N/A' ? data.Actors : null,
+                    runtime: data.Runtime !== 'N/A' ? data.Runtime : null,
+                    rated: data.Rated !== 'N/A' ? data.Rated : null,
+                    imdbID: data.imdbID
+                };
+
+                // Cache the result
+                this.cache.set(imdbID, {
+                    data: movieData,
+                    timestamp: Date.now()
+                });
+
+                return movieData;
+            } else {
+                console.warn(`⚠️ OMDB API error for ${imdbID}: ${data.Error}`);
+                return null;
+            }
+        } catch (error) {
+            console.error(`❌ Error fetching from OMDB for ${imdbID}:`, error);
+            return null;
+        }
+    }
+
+    // Enrich movies from catalog by searching OMDB
+    async enrichMoviesFromCatalog(catalogMovies, onProgress) {
+        const results = [];
+        
+        for (let i = 0; i < catalogMovies.length; i++) {
+            const catalogMovie = catalogMovies[i];
+            
+            // Search OMDB by title and year
+            const omdbData = await this.searchMovie(catalogMovie.title, catalogMovie.year);
+            
+            if (omdbData) {
+                // Merge catalog data (especially trailer) with OMDB data
+                const enrichedMovie = {
+                    ...omdbData,
+                    trailer: catalogMovie.trailer || omdbData.trailer // Keep trailer from catalog
+                };
+                console.log(`✅ Enriched: ${enrichedMovie.title} - Poster: ${enrichedMovie.poster ? 'Yes' : 'No'}`);
+                results.push(enrichedMovie);
+            } else {
+                // If OMDB search fails, use catalog data as fallback
+                console.warn(`⚠️ Using catalog data for: ${catalogMovie.title}`);
+                results.push(catalogMovie);
+            }
+            
+            // Call progress callback if provided
+            if (onProgress) {
+                onProgress(i + 1, catalogMovies.length);
+            }
+        }
+        
+        console.log(`📊 Total enriched: ${results.length} movies`);
+        
+        // Save cache to localStorage after batch operation
+        this.saveCacheToStorage();
+        console.log(`💾 Cache saved: ${this.cache.size} items`);
+        
+        return results;
+    }
+
+    // Fetch multiple movies with progress updates
+    async fetchMultipleMovies(imdbIDs, onProgress) {
+        const results = [];
+        
+        for (let i = 0; i < imdbIDs.length; i++) {
+            const imdbID = imdbIDs[i];
+            const movieData = await this.fetchMovieDetails(imdbID);
+            
+            if (movieData) {
+                results.push(movieData);
+            }
+            
+            // Call progress callback if provided
+            if (onProgress) {
+                onProgress(i + 1, imdbIDs.length);
+            }
+        }
+        
+        return results;
+    }
+
+    // Clear cache
+    clearCache() {
+        this.cache.clear();
+        console.log('🗑️ Cache cleared');
+    }
+
+    // Get cache stats
+    getCacheStats() {
+        return {
+            size: this.cache.size,
+            items: Array.from(this.cache.keys())
+        };
     }
 }
 
-// Export singleton instance
-const movieAPI = new MovieAPIHandler();
+// Create global instance
+const apiHandler = new APIHandler();
