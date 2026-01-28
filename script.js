@@ -94,12 +94,17 @@ document.addEventListener('DOMContentLoaded', function() {
             toggleWatched(item.id, type, this);
         });
         
-        // Add card click animation
-        card.addEventListener('click', function() {
-            this.style.transform = 'scale(0.98)';
-            setTimeout(() => {
-                this.style.transform = '';
-            }, 150);
+        // Add card click to open trailer modal
+        card.addEventListener('click', function(e) {
+            // Don't open modal if clicking the watch button
+            if (!e.target.closest('.watch-btn')) {
+                openTrailerModal(item);
+            }
+        });
+        
+        // Add card hover animation
+        card.addEventListener('mouseenter', function() {
+            this.style.cursor = 'pointer';
         });
         
         return card;
@@ -236,6 +241,61 @@ document.addEventListener('DOMContentLoaded', function() {
             }, 300);
         }, 3000);
     }
+
+    // Trailer Modal Functions
+    function openTrailerModal(item) {
+        const modal = document.getElementById('trailer-modal');
+        const modalTitle = document.getElementById('modal-title');
+        const modalMeta = document.getElementById('modal-meta');
+        const trailerPlayer = document.getElementById('trailer-player');
+
+        // Set modal content
+        modalTitle.textContent = item.title;
+        modalMeta.innerHTML = `
+            <span>${item.year}</span> • 
+            <span>${item.genre}</span> • 
+            <span>IMDb ${item.imdb}</span>
+        `;
+
+        // Set trailer URL
+        if (item.trailer) {
+            trailerPlayer.src = item.trailer;
+        } else {
+            trailerPlayer.src = '';
+            modalMeta.innerHTML += '<br><span style="color: #ff6b6b;">Trailer not available</span>';
+        }
+
+        // Show modal
+        modal.classList.add('active');
+        document.body.style.overflow = 'hidden';
+    }
+
+    function closeTrailerModal() {
+        const modal = document.getElementById('trailer-modal');
+        const trailerPlayer = document.getElementById('trailer-player');
+
+        // Stop video
+        trailerPlayer.src = '';
+
+        // Hide modal
+        modal.classList.remove('active');
+        document.body.style.overflow = 'auto';
+    }
+
+    // Modal event listeners
+    const modal = document.getElementById('trailer-modal');
+    const modalClose = document.querySelector('.modal-close');
+    const modalOverlay = document.querySelector('.modal-overlay');
+
+    modalClose.addEventListener('click', closeTrailerModal);
+    modalOverlay.addEventListener('click', closeTrailerModal);
+
+    // Close modal on ESC key
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            closeTrailerModal();
+        }
+    });
 
     // Add animation styles for notifications
     const style = document.createElement('style');

@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CineHub - Movies & TV Shows</title>
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -56,7 +57,30 @@
             <p>&copy; 2026 CineHub. Your ultimate entertainment destination.</p>
         </footer>
     </div>
+!-- Trailer Modal -->
+    <div id="trailer-modal" class="modal">
+        <div class="modal-overlay"></div>
+        <div class="modal-content">
+            <button class="modal-close">&times;</button>
+            <div class="modal-header">
+                <h2 id="modal-title"></h2>
+                <div id="modal-meta"></div>
+            </div>
+            <div class="modal-body">
+                <div class="video-container">
+                    <iframe id="trailer-player" 
+                            width="100%" 
+                            height="100%" 
+                            frameborder="0" 
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                            allowfullscreen>
+                    </iframe>
+                </div>
+            </div>
+        </div>
+    </div>
 
+    <
     <script src="data/movies-data.js"></script>
     <script src="script.js"></script>
 </body>
