@@ -256,7 +256,7 @@ class MovieAPIHandler {
                 
                 // Only delay if we made an API request (not cached)
                 if (!wasCached) {
-                    await this.delay(200);
+                    await this.delay(10);
                 }
             } catch (error) {
                 console.error(`❌ Error fetching movie ${localMovies[i].title}:`, error);

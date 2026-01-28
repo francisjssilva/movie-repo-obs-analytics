@@ -41,7 +41,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const moviesGrid = document.getElementById('movies-grid');
             const tvShowsGrid = document.getElementById('tv-shows-grid');
             moviesGrid.innerHTML = '<div class="loading-message">Loading movies from OMDB API...</div>';
-            tvShowsGrid.innerHTML = '';
+            tvShowsGrid.innerHTML = '<div class="loading-message">Loading TV shows...</div>';
 
             // Test API availability first
             await movieAPI.testAPIAvailability();
@@ -51,22 +51,29 @@ document.addEventListener('DOMContentLoaded', function() {
                 moviesGrid.innerHTML = `<div class="loading-message">Loading movies... ${current}/${total}</div>`;
             });
             
-            // Update message to show TV shows loading
-            moviesGrid.innerHTML = '<div class="loading-message">Loading TV shows from OMDB API...</div>';
+            // Display movies immediately once loaded
+            allMovies = enrichedMovies;
+            displayMovies(enrichedMovies);
+            
+            // Initialize filters now that movies are ready
+            initializeFilters();
+            
+            // Show notification that TV shows are still loading
+            showNotification('📺 Loading TV shows in background...');
 
-            // Fetch enriched TV show data
+            // Fetch enriched TV show data in background
             const enrichedTVShows = await movieAPI.getAllTVShows(moviesData.tvShows, (current, total, type) => {
-                moviesGrid.innerHTML = `<div class="loading-message">Loading TV shows... ${current}/${total}</div>`;
+                tvShowsGrid.innerHTML = `<div class="loading-message">Loading TV shows... ${current}/${total}</div>`;
             });
 
-            // Display enriched data
-            allMovies = enrichedMovies;
+            // Display TV shows once loaded
             allTVShows = enrichedTVShows;
-            displayMovies(enrichedMovies);
             displayTVShows(enrichedTVShows);
             
-            // Initialize filters
-            initializeFilters();
+            // Update filters with TV show data
+            updateGenreFilter();
+            updateDirectorFilter();
+            updateActorFilter();
 
             console.log('✅ Data loaded successfully with OMDB API enrichment');
         } catch (error) {
