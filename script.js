@@ -483,6 +483,14 @@ document.addEventListener('DOMContentLoaded', function() {
             applyFiltersAndSort();
         });
         
+        // Rating slider
+        ratingFilter.addEventListener('input', (e) => {
+            const value = parseFloat(e.target.value);
+            const ratingValue = document.getElementById('rating-value');
+            ratingValue.textContent = value == 0 ? 'Any' : `${value.toFixed(1)}+`;
+            applyFiltersAndSort();
+        });
+        
         // Add event listeners for other filters
         ratingFilter.addEventListener('change', applyFiltersAndSort);
         watchedFilter.addEventListener('change', applyFiltersAndSort);
@@ -748,6 +756,7 @@ document.addEventListener('DOMContentLoaded', function() {
         updateActorButtonText();
         
         document.getElementById('rating-filter').value = '0';
+        document.getElementById('rating-value').textContent = 'Any';
         document.getElementById('watched-filter').value = 'all';
         document.getElementById('runtime-filter').value = '0';
         document.getElementById('runtime-value').textContent = 'Any';

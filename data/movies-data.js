@@ -454,7 +454,7 @@ const moviesData = {
         },
         {
             "id": 112,
-            "title": "The House of Guinness",
+            "title": "House of Guinness",
             "year": "2025",
             "genre": "Drama, History",
             "imdb": 7.8,
