@@ -340,6 +340,76 @@ class DatabaseService {
         }
     }
 
+    // Delete movie by database ID
+    async deleteMovie(id) {
+        if (!this.configured) {
+            throw new Error('Supabase not configured');
+        }
+
+        try {
+            console.log('🗑️ Deleting movie with ID:', id);
+            
+            const response = await fetch(`${this.supabaseUrl}/rest/v1/movies?id=eq.${id}`, {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'apikey': this.supabaseKey,
+                    'Authorization': `Bearer ${this.supabaseKey}`
+                }
+            });
+
+            if (!response.ok) {
+                const error = await response.json();
+                throw new Error(error.message || 'Failed to delete movie');
+            }
+
+            console.log('✅ Movie deleted successfully');
+            
+            // Clear cache to refresh data
+            this.cache.delete('movies');
+            
+            return { success: true };
+        } catch (error) {
+            console.error('❌ Error deleting movie:', error);
+            return { success: false, error: error.message };
+        }
+    }
+
+    // Delete TV show by database ID
+    async deleteTVShow(id) {
+        if (!this.configured) {
+            throw new Error('Supabase not configured');
+        }
+
+        try {
+            console.log('🗑️ Deleting TV show with ID:', id);
+            
+            const response = await fetch(`${this.supabaseUrl}/rest/v1/tv_shows?id=eq.${id}`, {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'apikey': this.supabaseKey,
+                    'Authorization': `Bearer ${this.supabaseKey}`
+                }
+            });
+
+            if (!response.ok) {
+                const error = await response.json();
+                throw new Error(error.message || 'Failed to delete TV show');
+            }
+
+            console.log('✅ TV show deleted successfully');
+            
+            // Clear cache to refresh data
+            this.cache.delete('tv_shows');
+            
+            return { success: true };
+        } catch (error) {
+            console.error('❌ Error deleting TV show:', error);
+            return { success: false, error: error.message };
+        }
+    }
+
     // Clear cache
     clearCache() {
         this.cache.clear();

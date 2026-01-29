@@ -631,7 +631,9 @@ document.addEventListener('DOMContentLoaded', function() {
         card.addEventListener('click', function(e) {
             // Don't open modal if clicking buttons
             if (!e.target.closest('.watch-btn') && !e.target.closest('.favorite-btn')) {
-                openTrailerModal(item);
+                // Add type property to item
+                const itemWithType = { ...item, type: type };
+                openTrailerModal(itemWithType);
             }
         });
         
@@ -909,6 +911,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const modalTitle = document.getElementById('modal-title');
         const modalMeta = document.getElementById('modal-meta');
         const imdbBtn = document.getElementById('imdb-page-btn');
+        const deleteBtn = document.getElementById('delete-title-btn');
 
         // Set modal content
         modalTitle.textContent = item.title;
@@ -931,6 +934,23 @@ document.addEventListener('DOMContentLoaded', function() {
             imdbBtn.style.display = 'inline-flex';
         } else {
             imdbBtn.style.display = 'none';
+        }
+
+        // Show delete button only for logged-in users
+        const currentUser = authService.getUser();
+        if (currentUser) {
+            deleteBtn.style.display = 'inline-flex';
+            // Remove old event listener by cloning and replacing
+            const newDeleteBtn = deleteBtn.cloneNode(true);
+            deleteBtn.parentNode.replaceChild(newDeleteBtn, deleteBtn);
+            // Add new event listener with current item data
+            newDeleteBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                console.log('Delete button clicked for:', item.title);
+                openDeleteModal(item.title, item.id, item.type);
+            });
+        } else {
+            deleteBtn.style.display = 'none';
         }
 
         // Show modal
@@ -1348,6 +1368,110 @@ document.addEventListener('DOMContentLoaded', function() {
         
         showNotification('✅ Filters reset');
     }
+
+    // Delete Confirmation Modal Functions
+    const deleteModal = document.getElementById('delete-confirm-modal');
+    const deleteModalOverlay = document.querySelector('#delete-confirm-modal .modal-overlay');
+    const deleteTitleName = document.getElementById('delete-title-name');
+    const deleteInput = document.getElementById('delete-confirm-input');
+    const deleteError = document.getElementById('delete-error');
+    const cancelDeleteBtn = document.getElementById('cancel-delete-btn');
+    const confirmDeleteBtn = document.getElementById('confirm-delete-btn');
+
+    // Open delete confirmation modal (event listener added dynamically in openTrailerModal)
+    function openDeleteModal(title, itemId, itemType) {
+        console.log('openDeleteModal called with:', { title, itemId, itemType });
+        
+        deleteTitleName.textContent = title;
+        deleteInput.value = '';
+        deleteError.style.display = 'none';
+        confirmDeleteBtn.disabled = true;
+        confirmDeleteBtn.textContent = 'Delete Permanently';
+        deleteModal.style.display = 'flex';
+        deleteModal.classList.add('active');
+        
+        // Store data for deletion
+        confirmDeleteBtn.dataset.itemId = itemId;
+        confirmDeleteBtn.dataset.itemType = itemType;
+        confirmDeleteBtn.dataset.itemTitle = title;
+    }
+
+    // Close delete modal
+    function closeDeleteModal() {
+        deleteModal.style.display = 'none';
+        deleteModal.classList.remove('active');
+        deleteInput.value = '';
+        deleteError.style.display = 'none';
+        confirmDeleteBtn.textContent = 'Delete Permanently';
+    }
+
+    cancelDeleteBtn.addEventListener('click', closeDeleteModal);
+    if (deleteModalOverlay) {
+        deleteModalOverlay.addEventListener('click', closeDeleteModal);
+    }
+
+    // Validate input and enable/disable confirm button
+    deleteInput.addEventListener('input', () => {
+        const value = deleteInput.value.trim();
+        if (value === 'DELETE') {
+            confirmDeleteBtn.disabled = false;
+            deleteInput.classList.add('valid');
+            deleteError.style.display = 'none';
+        } else {
+            confirmDeleteBtn.disabled = true;
+            deleteInput.classList.remove('valid');
+        }
+    });
+
+    // Confirm deletion
+    confirmDeleteBtn.addEventListener('click', async () => {
+        const value = deleteInput.value.trim();
+        
+        if (value !== 'DELETE') {
+            deleteError.textContent = 'You must type DELETE exactly to confirm';
+            deleteError.style.display = 'block';
+            return;
+        }
+
+        const itemId = confirmDeleteBtn.dataset.itemId;
+        const itemType = confirmDeleteBtn.dataset.itemType;
+        const itemTitle = confirmDeleteBtn.dataset.itemTitle;
+
+        console.log('Deleting item:', { itemId, itemType, itemTitle });
+
+        // Disable button and show loading
+        confirmDeleteBtn.disabled = true;
+        confirmDeleteBtn.textContent = 'Deleting...';
+
+        // Delete from database
+        let result;
+        if (itemType === 'movie') {
+            result = await dbService.deleteMovie(itemId);
+        } else {
+            result = await dbService.deleteTVShow(itemId);
+        }
+
+        console.log('Delete result:', result);
+
+        if (result.success) {
+            showNotification(`✅ ${itemTitle} deleted successfully`);
+            closeDeleteModal();
+            closeTrailerModal();
+            
+            // Refresh the current tab
+            const activeTab = document.querySelector('.tab-btn.active').getAttribute('data-tab');
+            if (activeTab === 'movies') {
+                await loadMovieData();
+            } else {
+                await loadMovieData();
+            }
+        } else {
+            deleteError.textContent = `Error: ${result.error}`;
+            deleteError.style.display = 'block';
+            confirmDeleteBtn.disabled = false;
+            confirmDeleteBtn.textContent = 'Delete Permanently';
+        }
+    });
 
     // Add animation styles for notifications
     const style = document.createElement('style');

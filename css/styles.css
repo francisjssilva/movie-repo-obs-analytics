@@ -1109,6 +1109,109 @@ button, .card, .tab-btn, .watched-btn, .trailer-btn {
     background: linear-gradient(135deg, #ff3333 0%, #ff0000 100%);
 }
 
+.delete-btn {
+    background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%);
+    color: #fff;
+    border: none;
+}
+
+.delete-btn:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 20px rgba(255, 107, 107, 0.5);
+    background: linear-gradient(135deg, #ff8787 0%, #ff6b6b 100%);
+}
+
+/* Delete Confirmation Modal */
+.delete-confirm-content {
+    max-width: 500px;
+    background: linear-gradient(135deg, #2c2c54 0%, #1e1e3f 100%);
+}
+
+#delete-confirm-modal {
+    z-index: 100000;
+}
+
+#delete-confirm-modal .modal-overlay {
+    z-index: 100001;
+}
+
+#delete-confirm-modal .modal-content {
+    z-index: 100002;
+}
+
+.delete-confirm-input {
+    width: 100%;
+    padding: 12px 15px;
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    border-radius: 8px;
+    background: rgba(0, 0, 0, 0.3);
+    color: #fff;
+    font-size: 16px;
+    font-weight: 600;
+    text-align: center;
+    letter-spacing: 1px;
+    transition: all 0.3s ease;
+}
+
+.delete-confirm-input:focus {
+    outline: none;
+    border-color: #ff6b6b;
+    box-shadow: 0 0 15px rgba(255, 107, 107, 0.3);
+}
+
+.delete-confirm-input.valid {
+    border-color: #2ed573;
+    box-shadow: 0 0 15px rgba(46, 213, 115, 0.3);
+}
+
+.delete-actions {
+    display: flex;
+    gap: 15px;
+    margin-top: 25px;
+}
+
+.btn-secondary {
+    flex: 1;
+    padding: 12px 24px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.1);
+    color: #fff;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.btn-secondary:hover {
+    background: rgba(255, 255, 255, 0.2);
+    border-color: rgba(255, 255, 255, 0.5);
+}
+
+.btn-danger {
+    flex: 1;
+    padding: 12px 24px;
+    border: none;
+    border-radius: 8px;
+    background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%);
+    color: #fff;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.btn-danger:hover:not(:disabled) {
+    background: linear-gradient(135deg, #ff8787 0%, #ff6b6b 100%);
+    box-shadow: 0 4px 15px rgba(255, 107, 107, 0.4);
+    transform: translateY(-2px);
+}
+
+.btn-danger:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
 /* Responsive Design */
 @media (max-width: 768px) {
     .header {

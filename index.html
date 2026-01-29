@@ -224,7 +224,43 @@
                         <a id="imdb-page-btn" href="#" target="_blank" class="trailer-btn imdb-btn">
                             <span>🎬</span> View on IMDb
                         </a>
+                        <button id="delete-title-btn" class="trailer-btn delete-btn" style="display: none;">
+                            <span>🗑️</span> Delete Title
+                        </button>
                     </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Delete Confirmation Modal -->
+    <div id="delete-confirm-modal" class="modal" style="display: none;">
+        <div class="modal-overlay"></div>
+        <div class="modal-content delete-confirm-content">
+            <div class="modal-header">
+                <h2>⚠️ Confirm Deletion</h2>
+            </div>
+            <div class="modal-body">
+                <p style="margin-bottom: 20px; color: rgba(255,255,255,0.9);">
+                    You are about to permanently delete <strong id="delete-title-name"></strong> from the database.
+                </p>
+                <p style="margin-bottom: 20px; color: #ff6b6b; font-weight: 500;">
+                    This action cannot be undone!
+                </p>
+                <p style="margin-bottom: 15px; color: rgba(255,255,255,0.8);">
+                    Type <strong>DELETE</strong> to confirm:
+                </p>
+                <input 
+                    type="text" 
+                    id="delete-confirm-input" 
+                    class="delete-confirm-input" 
+                    placeholder="Type DELETE"
+                    autocomplete="off"
+                />
+                <div id="delete-error" class="error-message" style="display: none; margin-top: 10px;"></div>
+                <div class="delete-actions">
+                    <button id="cancel-delete-btn" class="btn-secondary">Cancel</button>
+                    <button id="confirm-delete-btn" class="btn-danger" disabled>Delete Permanently</button>
                 </div>
             </div>
         </div>
