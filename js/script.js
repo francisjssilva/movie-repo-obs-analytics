@@ -464,48 +464,30 @@ document.addEventListener('DOMContentLoaded', function() {
 
             console.log('🗄️ Loading catalog from database...');
             
-            // Fetch catalog from database
+            // Fetch catalog from database (already has full OMDB data)
             const moviesCatalog = await dbService.getMovies();
             const tvShowsCatalog = await dbService.getTVShows();
             
-            console.log(`📋 Got ${moviesCatalog.length} movies and ${tvShowsCatalog.length} TV shows from catalog`);
+            console.log(`📋 Got ${moviesCatalog.length} movies and ${tvShowsCatalog.length} TV shows from database`);
             
-            // Enrich movies with OMDB API data (search by title + year)
-            console.log('🌐 Enriching movies from OMDB API...');
-            moviesGrid.innerHTML = '<div class="loading-message">Enriching movies from OMDB API (0/' + moviesCatalog.length + ')...</div>';
-            
-            const enrichedMovies = await apiHandler.enrichMoviesFromCatalog(moviesCatalog, (current, total) => {
-                moviesGrid.innerHTML = `<div class="loading-message">Enriching movies from OMDB API (${current}/${total})...</div>`;
-            });
-            
-            // Display movies immediately
-            allMovies = enrichedMovies;
-            displayMovies(enrichedMovies);
+            // Display movies immediately (no OMDB enrichment needed - data is already complete in DB)
+            allMovies = moviesCatalog;
+            displayMovies(moviesCatalog);
             
             // Initialize filters now that movies are ready
             initializeFilters();
             
-            // Enrich TV shows with OMDB API data (search by title + year)
-            console.log('🌐 Enriching TV shows from OMDB API...');
-            tvShowsGrid.innerHTML = '<div class="loading-message">Enriching TV shows from OMDB API (0/' + tvShowsCatalog.length + ')...</div>';
-            
-            const enrichedTVShows = await apiHandler.enrichMoviesFromCatalog(tvShowsCatalog, (current, total) => {
-                tvShowsGrid.innerHTML = `<div class="loading-message">Enriching TV shows from OMDB API (${current}/${total})...</div>`;
-            });
-            
-            console.log(`📺 Enriched ${enrichedTVShows.length} TV shows`);
-            
             // Display TV shows
-            allTVShows = enrichedTVShows;
-            displayTVShows(enrichedTVShows);
+            allTVShows = tvShowsCatalog;
+            displayTVShows(tvShowsCatalog);
             
             // Update filters with TV show data
             updateGenreFilter();
             updateDirectorFilter();
             updateActorFilter();
             
-            console.log('✅ Data loaded successfully from OMDB API');
-            showNotification('✅ Loaded from OMDB API');
+            console.log('✅ Data loaded successfully from database');
+            showNotification('✅ Catalog loaded');
             
         } catch (error) {
             console.error('❌ Error loading data:', error);
@@ -908,8 +890,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const modal = document.getElementById('trailer-modal');
         const modalTitle = document.getElementById('modal-title');
         const modalMeta = document.getElementById('modal-meta');
-        const imdbBtn = document.getElementById('imdb-trailer-btn');
-        const youtubeBtn = document.getElementById('youtube-trailer-btn');
+        const imdbBtn = document.getElementById('imdb-page-btn');
 
         // Set modal content
         modalTitle.textContent = item.title;
@@ -926,23 +907,12 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('modal-rated').textContent = item.rated || 'N/A';
         document.getElementById('modal-description').textContent = item.description || 'N/A';
 
-        // Configure trailer buttons
-        if (item.imdbVideoGallery) {
-            imdbBtn.href = item.imdbVideoGallery;
+        // Configure IMDb button
+        if (item.imdbID) {
+            imdbBtn.href = `https://www.imdb.com/title/${item.imdbID}/`;
             imdbBtn.style.display = 'inline-flex';
         } else {
             imdbBtn.style.display = 'none';
-        }
-
-        if (item.trailer) {
-            // Convert embed URL to watch URL for external opening
-            const videoId = item.trailer.includes('embed/') 
-                ? item.trailer.split('embed/')[1].split('?')[0]
-                : '';
-            youtubeBtn.href = videoId ? `https://www.youtube.com/watch?v=${videoId}` : item.trailer;
-            youtubeBtn.style.display = 'inline-flex';
-        } else {
-            youtubeBtn.style.display = 'none';
         }
 
         // Show modal
