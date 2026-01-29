@@ -1861,16 +1861,21 @@ button, .card, .tab-btn, .watched-btn, .trailer-btn {
     transition: all 0.3s ease;
     z-index: 2;
     color: rgba(255, 255, 255, 0.7);
+    -webkit-text-fill-color: rgba(255, 255, 255, 0.7);
+    filter: grayscale(100%);
 }
 
 .favorite-btn:hover {
     transform: scale(1.1);
     background: rgba(0, 0, 0, 0.9);
     color: rgba(255, 255, 255, 0.9);
+    -webkit-text-fill-color: rgba(255, 255, 255, 0.9);
 }
 
 .favorite-btn.active {
-    color: #ff6b6b;
+    color: #ff6b6b !important;
+    -webkit-text-fill-color: #ff6b6b !important;
+    filter: grayscale(0%);
 }
 
 @media (max-width: 768px) {
