@@ -17,6 +17,24 @@ document.addEventListener('DOMContentLoaded', function() {
     const favoritesFilterSection = document.getElementById('favorites-filter-section');
     const watchedFilterSection = document.getElementById('watched-filter-section');
 
+    // Scroll to Top Button
+    const scrollToTopBtn = document.getElementById('scroll-to-top');
+    
+    window.addEventListener('scroll', () => {
+        if (window.pageYOffset > 300) {
+            scrollToTopBtn.classList.add('visible');
+        } else {
+            scrollToTopBtn.classList.remove('visible');
+        }
+    });
+    
+    scrollToTopBtn.addEventListener('click', () => {
+        window.scrollTo({
+            top: 0,
+            behavior: 'smooth'
+        });
+    });
+
     // Auth UI elements
     const authBtn = document.getElementById('auth-btn');
     const userMenu = document.getElementById('user-menu');
