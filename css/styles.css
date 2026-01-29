@@ -850,6 +850,7 @@ button, .card, .tab-btn, .watched-btn, .trailer-btn {
     border: 2px solid rgba(255, 255, 255, 0.1);
     backdrop-filter: blur(10px);
     -webkit-tap-highlight-color: transparent;
+    position: relative;
 }
 
 .card:hover {
