@@ -282,6 +282,7 @@
             <div id="auth-form">
                 <input type="email" id="auth-email" placeholder="Email" class="auth-input">
                 <input type="password" id="auth-password" placeholder="Password" class="auth-input">
+                <a href="#" id="forgot-password-link" class="forgot-password-link">Forgot password?</a>
                 <button id="auth-submit-btn" class="auth-submit-btn">Login</button>
                 <p class="auth-error" id="auth-error" style="display: none;"></p>
                 <p class="auth-toggle">
@@ -289,6 +290,55 @@
                     <a href="#" id="auth-toggle-link">Sign up</a>
                 </p>
             </div>
+        </div>
+    </div>
+
+    <!-- Password Recovery Modal -->
+    <div id="recovery-modal" class="modal" style="display: none;">
+        <div class="modal-overlay"></div>
+        <div class="modal-content auth-modal-content">
+            <span class="close-modal" id="close-recovery-modal">&times;</span>
+            <h2>Reset Password</h2>
+            <p class="modal-subtitle">Enter your email address and we'll send you a link to reset your password.</p>
+            
+            <div id="recovery-form">
+                <input type="email" id="recovery-email" placeholder="Email" class="auth-input" required>
+                <button id="recovery-submit-btn" class="auth-submit-btn">Send Reset Link</button>
+                <p class="auth-error" id="recovery-error" style="display: none;"></p>
+                <p class="recovery-success" id="recovery-success" style="display: none;">✅ Password reset email sent! Check your inbox.</p>
+                <p class="auth-toggle">
+                    <a href="#" id="back-to-login-link">Back to login</a>
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Update Password Modal -->
+    <div id="update-password-modal" class="modal" style="display: none;">
+        <div class="modal-overlay"></div>
+        <div class="modal-content auth-modal-content">
+            <span class="close-modal" id="close-update-password-modal">&times;</span>
+            <h2>Set New Password</h2>
+            <p class="modal-subtitle">Enter your new password below.</p>
+            
+            <div id="update-password-form">
+                <input type="password" id="new-password" placeholder="New Password" class="auth-input" required minlength="6">
+                <input type="password" id="confirm-password" placeholder="Confirm Password" class="auth-input" required minlength="6">
+                <button id="update-password-btn" class="auth-submit-btn">Update Password</button>
+                <p class="auth-error" id="update-password-error" style="display: none;"></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Confirmation Message Modal -->
+    <div id="confirmation-modal" class="modal" style="display: none;">
+        <div class="modal-overlay"></div>
+        <div class="modal-content auth-modal-content confirmation-modal">
+            <span class="close-modal" id="close-confirmation-modal">&times;</span>
+            <div class="confirmation-icon">✅</div>
+            <h2 id="confirmation-title">Success!</h2>
+            <p id="confirmation-message" class="modal-subtitle"></p>
+            <button id="confirmation-ok-btn" class="auth-submit-btn">OK</button>
         </div>
     </div>
 

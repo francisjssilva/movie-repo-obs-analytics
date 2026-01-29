@@ -99,6 +99,50 @@ class AuthService {
         }
     }
 
+    // Send password reset email
+    async resetPassword(email) {
+        if (!this.supabase) {
+            console.error('❌ Supabase client not initialized');
+            return { success: false, error: 'Authentication service not ready. Please refresh the page.' };
+        }
+
+        try {
+            const { error } = await this.supabase.auth.resetPasswordForEmail(email, {
+                redirectTo: `${window.location.origin}/index.html`,
+            });
+
+            if (error) throw error;
+
+            console.log('✅ Password reset email sent to:', email);
+            return { success: true };
+        } catch (error) {
+            console.error('❌ Password reset error:', error);
+            return { success: false, error: error.message };
+        }
+    }
+
+    // Update password (called after user clicks reset link)
+    async updatePassword(newPassword) {
+        if (!this.supabase) {
+            console.error('❌ Supabase client not initialized');
+            return { success: false, error: 'Authentication service not ready. Please refresh the page.' };
+        }
+
+        try {
+            const { error } = await this.supabase.auth.updateUser({
+                password: newPassword
+            });
+
+            if (error) throw error;
+
+            console.log('✅ Password updated successfully');
+            return { success: true };
+        } catch (error) {
+            console.error('❌ Password update error:', error);
+            return { success: false, error: error.message };
+        }
+    }
+
     // Get current user
     getUser() {
         return this.currentUser;

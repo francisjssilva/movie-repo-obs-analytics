@@ -84,16 +84,20 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Update auth modal text
     function updateAuthModal() {
+        const forgotPasswordLink = document.getElementById('forgot-password-link');
+        
         if (isSignUpMode) {
             authModalTitle.textContent = 'Sign Up for CineHub';
             authSubmitBtn.textContent = 'Sign Up';
             authToggleText.textContent = 'Already have an account?';
             authToggleLink.textContent = 'Login';
+            if (forgotPasswordLink) forgotPasswordLink.style.display = 'none';
         } else {
             authModalTitle.textContent = 'Login to CineHub';
             authSubmitBtn.textContent = 'Login';
             authToggleText.textContent = "Don't have an account?";
             authToggleLink.textContent = 'Sign up';
+            if (forgotPasswordLink) forgotPasswordLink.style.display = 'block';
         }
         authError.style.display = 'none';
     }
@@ -145,6 +149,212 @@ document.addEventListener('DOMContentLoaded', function() {
         authError.style.display = 'block';
         authError.style.color = isError ? '#ff6b6b' : '#5cd85a';
     }
+
+    // Password Recovery Modal
+    const forgotPasswordLink = document.getElementById('forgot-password-link');
+    const recoveryModal = document.getElementById('recovery-modal');
+    const closeRecoveryModal = document.getElementById('close-recovery-modal');
+    const recoveryEmail = document.getElementById('recovery-email');
+    const recoverySubmitBtn = document.getElementById('recovery-submit-btn');
+    const recoveryError = document.getElementById('recovery-error');
+    const recoverySuccess = document.getElementById('recovery-success');
+    const backToLoginLink = document.getElementById('back-to-login-link');
+
+    // Open recovery modal
+    forgotPasswordLink.addEventListener('click', (e) => {
+        e.preventDefault();
+        authModal.style.display = 'none';
+        recoveryModal.style.display = 'flex';
+        recoveryEmail.value = authEmail.value; // Pre-fill with login email if available
+        recoveryError.style.display = 'none';
+        recoverySuccess.style.display = 'none';
+    });
+
+    // Close recovery modal
+    closeRecoveryModal.addEventListener('click', () => {
+        recoveryModal.style.display = 'none';
+    });
+
+    // Click outside modal
+    recoveryModal.addEventListener('click', (e) => {
+        if (e.target === recoveryModal) {
+            recoveryModal.style.display = 'none';
+        }
+    });
+
+    // Back to login
+    backToLoginLink.addEventListener('click', (e) => {
+        e.preventDefault();
+        recoveryModal.style.display = 'none';
+        authModal.style.display = 'flex';
+    });
+
+    // Handle password recovery submission
+    recoverySubmitBtn.addEventListener('click', async () => {
+        const email = recoveryEmail.value.trim();
+
+        if (!email) {
+            recoveryError.textContent = 'Please enter your email address';
+            recoveryError.style.display = 'block';
+            recoverySuccess.style.display = 'none';
+            return;
+        }
+
+        // Basic email validation
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email)) {
+            recoveryError.textContent = 'Please enter a valid email address';
+            recoveryError.style.display = 'block';
+            recoverySuccess.style.display = 'none';
+            return;
+        }
+
+        recoverySubmitBtn.disabled = true;
+        recoverySubmitBtn.textContent = 'Sending...';
+        recoveryError.style.display = 'none';
+        recoverySuccess.style.display = 'none';
+
+        const result = await authService.resetPassword(email);
+
+        if (result.success) {
+            recoverySuccess.style.display = 'block';
+            recoveryError.style.display = 'none';
+            recoveryEmail.value = '';
+            showNotification('📧 Password reset email sent!');
+            
+            // Close modal after 3 seconds
+            setTimeout(() => {
+                recoveryModal.style.display = 'none';
+                recoverySuccess.style.display = 'none';
+            }, 3000);
+        } else {
+            recoveryError.textContent = result.error || 'Failed to send reset email';
+            recoveryError.style.display = 'block';
+            recoverySuccess.style.display = 'none';
+        }
+
+        recoverySubmitBtn.disabled = false;
+        recoverySubmitBtn.textContent = 'Send Reset Link';
+    });
+
+    // Update Password Modal (for password reset from email link)
+    const updatePasswordModal = document.getElementById('update-password-modal');
+    const closeUpdatePasswordModal = document.getElementById('close-update-password-modal');
+    const newPassword = document.getElementById('new-password');
+    const confirmPassword = document.getElementById('confirm-password');
+    const updatePasswordBtn = document.getElementById('update-password-btn');
+    const updatePasswordError = document.getElementById('update-password-error');
+
+    // Confirmation Modal
+    const confirmationModal = document.getElementById('confirmation-modal');
+    const closeConfirmationModal = document.getElementById('close-confirmation-modal');
+    const confirmationTitle = document.getElementById('confirmation-title');
+    const confirmationMessage = document.getElementById('confirmation-message');
+    const confirmationOkBtn = document.getElementById('confirmation-ok-btn');
+
+    // Show confirmation modal
+    function showConfirmation(title, message) {
+        confirmationTitle.textContent = title;
+        confirmationMessage.textContent = message;
+        confirmationModal.style.display = 'flex';
+    }
+
+    // Close confirmation modal
+    closeConfirmationModal.addEventListener('click', () => {
+        confirmationModal.style.display = 'none';
+    });
+
+    confirmationOkBtn.addEventListener('click', () => {
+        confirmationModal.style.display = 'none';
+    });
+
+    confirmationModal.addEventListener('click', (e) => {
+        if (e.target === confirmationModal) {
+            confirmationModal.style.display = 'none';
+        }
+    });
+
+    // Close update password modal
+    closeUpdatePasswordModal.addEventListener('click', () => {
+        updatePasswordModal.style.display = 'none';
+    });
+
+    updatePasswordModal.addEventListener('click', (e) => {
+        if (e.target === updatePasswordModal) {
+            updatePasswordModal.style.display = 'none';
+        }
+    });
+
+    // Handle password update submission
+    updatePasswordBtn.addEventListener('click', async () => {
+        const newPass = newPassword.value;
+        const confirmPass = confirmPassword.value;
+
+        updatePasswordError.style.display = 'none';
+
+        if (!newPass || !confirmPass) {
+            updatePasswordError.textContent = 'Please fill in both fields';
+            updatePasswordError.style.display = 'block';
+            return;
+        }
+
+        if (newPass.length < 6) {
+            updatePasswordError.textContent = 'Password must be at least 6 characters';
+            updatePasswordError.style.display = 'block';
+            return;
+        }
+
+        if (newPass !== confirmPass) {
+            updatePasswordError.textContent = 'Passwords do not match';
+            updatePasswordError.style.display = 'block';
+            return;
+        }
+
+        updatePasswordBtn.disabled = true;
+        updatePasswordBtn.textContent = 'Updating...';
+
+        const result = await authService.updatePassword(newPass);
+
+        if (result.success) {
+            updatePasswordModal.style.display = 'none';
+            newPassword.value = '';
+            confirmPassword.value = '';
+            showConfirmation('Password Updated!', 'Your password has been successfully changed. You can now login with your new password.');
+            showNotification('🔐 Password updated successfully!');
+        } else {
+            updatePasswordError.textContent = result.error || 'Failed to update password';
+            updatePasswordError.style.display = 'block';
+        }
+
+        updatePasswordBtn.disabled = false;
+        updatePasswordBtn.textContent = 'Update Password';
+    });
+
+    // Check URL for auth events (password reset, email confirmation)
+    async function checkAuthEvents() {
+        const hashParams = new URLSearchParams(window.location.hash.substring(1));
+        const type = hashParams.get('type');
+
+        if (type === 'recovery') {
+            // User clicked password reset link
+            updatePasswordModal.style.display = 'flex';
+            updatePasswordError.style.display = 'none';
+            newPassword.value = '';
+            confirmPassword.value = '';
+            
+            // Clear the hash from URL
+            history.replaceState(null, null, window.location.pathname);
+        } else if (type === 'signup' || type === 'email_confirmation') {
+            // Email confirmed successfully
+            showConfirmation('Email Confirmed!', 'Your email has been verified. You can now login to your account.');
+            
+            // Clear the hash from URL
+            history.replaceState(null, null, window.location.pathname);
+        }
+    }
+
+    // Check for auth events on page load
+    checkAuthEvents();
 
     // Logout
     logoutBtn.addEventListener('click', async () => {
