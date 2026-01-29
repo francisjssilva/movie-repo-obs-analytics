@@ -17,29 +17,15 @@ document.addEventListener('DOMContentLoaded', function() {
     const favoritesFilterSection = document.getElementById('favorites-filter-section');
     const watchedFilterSection = document.getElementById('watched-filter-section');
 
-    // Scroll to Top Button
-    const scrollToTopBtn = document.getElementById('scroll-to-top');
-    
-    window.addEventListener('scroll', () => {
-        if (window.pageYOffset > 300) {
-            scrollToTopBtn.classList.add('visible');
-        } else {
-            scrollToTopBtn.classList.remove('visible');
-        }
-    });
-    
-    scrollToTopBtn.addEventListener('click', () => {
-        window.scrollTo({
-            top: 0,
-            behavior: 'smooth'
-        });
-    });
-
     // Auth UI elements
     const authBtn = document.getElementById('auth-btn');
     const userMenu = document.getElementById('user-menu');
     const userEmail = document.getElementById('user-email');
     const logoutBtn = document.getElementById('logout-btn');
+    const userIconBtn = document.getElementById('user-icon-btn');
+    const userMenuDropdown = document.getElementById('user-menu-dropdown');
+    const dropdownEmail = document.getElementById('dropdown-email');
+    const dropdownLogoutBtn = document.getElementById('dropdown-logout-btn');
     const authModal = document.getElementById('auth-modal');
     const closeAuthModal = document.getElementById('close-auth-modal');
     const authForm = document.getElementById('auth-form');
@@ -52,6 +38,21 @@ document.addEventListener('DOMContentLoaded', function() {
     const authModalTitle = document.getElementById('auth-modal-title');
     
     let isSignUpMode = false;
+
+    // Toggle dropdown menu on mobile
+    if (userIconBtn) {
+        userIconBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            userMenuDropdown.classList.toggle('active');
+        });
+    }
+
+    // Close dropdown when clicking outside
+    document.addEventListener('click', (e) => {
+        if (userMenuDropdown && !userMenuDropdown.contains(e.target) && e.target !== userIconBtn) {
+            userMenuDropdown.classList.remove('active');
+        }
+    });
 
     // Auth button click
     authBtn.addEventListener('click', () => {
@@ -150,6 +151,14 @@ document.addEventListener('DOMContentLoaded', function() {
         await authService.signOut();
     });
 
+    // Dropdown logout
+    if (dropdownLogoutBtn) {
+        dropdownLogoutBtn.addEventListener('click', async () => {
+            userMenuDropdown.classList.remove('active');
+            await authService.signOut();
+        });
+    }
+
     // Submit Title Modal
     const addTitleBtn = document.getElementById('add-title-btn');
     const submitTitleModal = document.getElementById('submit-title-modal');
@@ -157,13 +166,42 @@ document.addEventListener('DOMContentLoaded', function() {
     const cancelSubmitBtn = document.getElementById('cancel-submit');
     const submitTitleForm = document.getElementById('submit-title-form');
     const submitStatus = document.getElementById('submit-status');
+    
+    // Step navigation elements
+    const searchFormStep = document.getElementById('search-form-step');
+    const searchResultsStep = document.getElementById('search-results-step');
+    const backToFormBtn = document.getElementById('back-to-form-btn');
+
+    // Function to show search form step
+    function showSearchFormStep() {
+        searchFormStep.style.display = 'block';
+        searchResultsStep.style.display = 'none';
+        submitStatus.style.display = 'none';
+    }
+
+    // Function to show results step
+    function showResultsStep(resultsCount) {
+        searchFormStep.style.display = 'none';
+        searchResultsStep.style.display = 'block';
+        document.getElementById('results-count').textContent = `Found ${resultsCount} result(s). Select one to continue.`;
+    }
 
     // Open submit modal
     if (addTitleBtn) {
         addTitleBtn.addEventListener('click', () => {
             submitTitleModal.style.display = 'flex';
+            showSearchFormStep();
             submitTitleForm.reset();
-            submitStatus.style.display = 'none';
+        });
+    }
+
+    // Back to form button
+    if (backToFormBtn) {
+        backToFormBtn.addEventListener('click', () => {
+            showSearchFormStep();
+            // Reset selection
+            selectedResult = null;
+            document.getElementById('confirm-selection-btn').disabled = true;
         });
     }
 
@@ -171,12 +209,14 @@ document.addEventListener('DOMContentLoaded', function() {
     if (closeSubmitModal) {
         closeSubmitModal.addEventListener('click', () => {
             submitTitleModal.style.display = 'none';
+            showSearchFormStep();
         });
     }
 
     if (cancelSubmitBtn) {
         cancelSubmitBtn.addEventListener('click', () => {
             submitTitleModal.style.display = 'none';
+            showSearchFormStep();
         });
     }
 
@@ -207,7 +247,6 @@ document.addEventListener('DOMContentLoaded', function() {
         searchOMDBBtn.disabled = true;
         searchOMDBBtn.textContent = 'Searching...';
         showSubmitStatus('🔍 Searching OMDB...', 'loading');
-        resultsContainer.style.display = 'none';
         resultsGrid.innerHTML = '';
 
         try {
@@ -220,7 +259,6 @@ document.addEventListener('DOMContentLoaded', function() {
             }
 
             console.log(`✅ Found ${searchResults.length} results`);
-            showSubmitStatus(`Found ${searchResults.length} result(s)`, 'success');
 
             // Check which titles already exist in database
             const existsChecks = await Promise.all(
@@ -255,7 +293,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 resultsGrid.appendChild(card);
             });
 
-            resultsContainer.style.display = 'block';
+            // Switch to results step
+            showResultsStep(searchResults.length);
 
         } catch (error) {
             console.error('❌ Error searching OMDB:', error);
@@ -278,15 +317,18 @@ document.addEventListener('DOMContentLoaded', function() {
 
         selectedResult = result;
         
-        // Enable confirm button
+        // Enable confirm button and update count text
         const confirmBtn = document.getElementById('confirm-selection-btn');
         confirmBtn.disabled = false;
         
-        showSubmitStatus(`Selected: ${result.Title} (${result.Year})`, 'success');
+        const resultsCount = document.getElementById('results-count');
+        resultsCount.innerHTML = `<strong style="color: #5cd85a;">✓ Selected:</strong> ${result.Title} (${result.Year}) - Click confirm to add.`;
     }
 
     // Confirm selection and add to database
     const confirmSelectionBtn = document.getElementById('confirm-selection-btn');
+    const resultsStatus = document.getElementById('results-status');
+    
     confirmSelectionBtn?.addEventListener('click', async () => {
         if (!selectedResult) return;
 
@@ -295,7 +337,11 @@ document.addEventListener('DOMContentLoaded', function() {
         
         confirmSelectionBtn.disabled = true;
         confirmSelectionBtn.textContent = 'Adding...';
-        showSubmitStatus('🔄 Loading full details...', 'loading');
+        
+        // Show status in results step
+        resultsStatus.textContent = '🔄 Loading full details...';
+        resultsStatus.className = 'submit-status loading';
+        resultsStatus.style.display = 'block';
 
         try {
             // Fetch full details from OMDB
@@ -349,7 +395,8 @@ document.addEventListener('DOMContentLoaded', function() {
             console.log('📋 Prepared data for DB:', dbData);
 
             // Insert into database
-            showSubmitStatus('📤 Adding to database...', 'loading');
+            resultsStatus.textContent = '📤 Adding to database...';
+            resultsStatus.className = 'submit-status loading';
 
             let insertResult;
             if (type === 'movie') {
@@ -359,14 +406,20 @@ document.addEventListener('DOMContentLoaded', function() {
             }
 
             if (insertResult.success) {
-                showSubmitStatus(`✓ ${omdbData.Title} has been added successfully!`, 'success');
+                resultsStatus.textContent = `✓ ${omdbData.Title} has been added successfully!`;
+                resultsStatus.className = 'submit-status success';
                 confirmSelectionBtn.textContent = 'Added!';
                 
                 // Reload data after 2 seconds
                 setTimeout(async () => {
                     submitTitleModal.style.display = 'none';
+                    showSearchFormStep(); // Reset to form step
+                    submitTitleForm.reset(); // Clear form
                     confirmSelectionBtn.disabled = false;
                     confirmSelectionBtn.textContent = 'Confirm Selection';
+                    selectedResult = null;
+                    searchResults = [];
+                    resultsStatus.style.display = 'none';
                     showNotification('✓ Title added! Refreshing...');
                     await loadMovieData();
                 }, 2000);
@@ -376,7 +429,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
         } catch (error) {
             console.error('❌ Error adding title:', error);
-            showSubmitStatus(`❌ Error: ${error.message}`, 'error');
+            resultsStatus.textContent = `❌ Error: ${error.message}`;
+            resultsStatus.className = 'submit-status error';
+            resultsStatus.style.display = 'block';
             confirmSelectionBtn.disabled = false;
             confirmSelectionBtn.textContent = 'Confirm Selection';
         }
@@ -390,20 +445,27 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Listen for auth state changes
     authService.onAuthChange((user) => {
+        const addTitleBtn = document.getElementById('add-title-btn');
         if (user) {
             authBtn.style.display = 'none';
             userMenu.style.display = 'flex';
             userEmail.textContent = user.email;
+            if (userIconBtn) userIconBtn.style.display = 'flex';
+            if (dropdownEmail) dropdownEmail.textContent = user.email;
             favoritesFilterSection.style.display = 'block'; // Show favorites filter
             watchedFilterSection.style.display = 'block'; // Show watched filter
+            if (addTitleBtn) addTitleBtn.style.display = 'flex'; // Show add title button
             loadUserData();
         } else {
             authBtn.style.display = 'block';
             userMenu.style.display = 'none';
+            if (userIconBtn) userIconBtn.style.display = 'none';
+            if (userMenuDropdown) userMenuDropdown.classList.remove('active');
             favoritesFilterSection.style.display = 'none'; // Hide favorites filter
             watchedFilterSection.style.display = 'none'; // Hide watched filter
             favoritesFilter.checked = false; // Reset favorites filter
             document.getElementById('watched-filter').value = 'all'; // Reset watched filter
+            if (addTitleBtn) addTitleBtn.style.display = 'none'; // Hide add title button
             userFavorites = [];
             // Keep localStorage watched items when logged out
             watchedMovies = JSON.parse(localStorage.getItem('watchedMovies')) || [];

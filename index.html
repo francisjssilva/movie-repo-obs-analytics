@@ -25,9 +25,15 @@
             <div class="user-section">
                 <button id="auth-btn" class="auth-btn">Login</button>
                 <div id="user-menu" class="user-menu" style="display: none;">
-                    <button id="add-title-btn" class="add-title-btn" title="Submit a new title">+ Add Title</button>
                     <span id="user-email" class="user-email"></span>
                     <button id="logout-btn" class="logout-btn">Logout</button>
+                </div>
+                <button id="user-icon-btn" class="user-icon-btn" style="display: none;" title="User menu">
+                    👤
+                </button>
+                <div id="user-menu-dropdown" class="user-menu-dropdown">
+                    <div class="dropdown-email" id="dropdown-email"></div>
+                    <button id="dropdown-logout-btn" class="logout-btn">Logout</button>
                 </div>
             </div>
         </header>
@@ -183,6 +189,7 @@
         <!-- Footer -->
         <footer class="footer">
             <p>&copy; 2026 CineHub. Your ultimate entertainment destination.</p>
+            <a href="#" class="back-to-top-link">↑ Back to top</a>
         </footer>
             </div>
         </div>
@@ -289,42 +296,60 @@
     <div id="submit-title-modal" class="modal" style="display: none;">
         <div class="modal-content submit-modal-content">
             <span class="close-modal" id="close-submit-modal">&times;</span>
-            <h2>Submit a New Title</h2>
-            <p class="modal-subtitle">Help us expand our catalog! Submit a movie or TV show.</p>
             
-            <form id="submit-title-form">
-                <div class="form-group">
-                    <label for="submit-type">Type *</label>
-                    <select id="submit-type" class="form-input" required>
-                        <option value="movie">Movie</option>
-                        <option value="tv">TV Show</option>
-                    </select>
-                </div>
+            <!-- Step 1: Search Form -->
+            <div id="search-form-step" class="modal-step">
+                <h2>Submit a New Title</h2>
+                <p class="modal-subtitle">Help us expand our catalog! Submit a movie or TV show.</p>
                 
-                <div class="form-group">
-                    <label for="submit-title">Title *</label>
-                    <input type="text" id="submit-title" class="form-input" placeholder="Enter title to search..." required>
+                <form id="submit-title-form">
+                    <div class="form-group">
+                        <label for="submit-type">Type *</label>
+                        <select id="submit-type" class="form-input" required>
+                            <option value="movie">Movie</option>
+                            <option value="tv">TV Show</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="submit-title">Title *</label>
+                        <input type="text" id="submit-title" class="form-input" placeholder="Enter title to search..." required>
+                    </div>
+                    
+                    <div class="form-actions">
+                        <button type="button" class="btn-cancel" id="cancel-submit">Cancel</button>
+                        <button type="button" class="btn-search" id="search-omdb-btn">Search OMDB</button>
+                    </div>
+                    
+                    <p class="submit-status" id="submit-status" style="display: none;"></p>
+                </form>
+            </div>
+            
+            <!-- Step 2: Search Results -->
+            <div id="search-results-step" class="modal-step" style="display: none;">
+                <div class="results-header">
+                    <button class="back-btn" id="back-to-form-btn">
+                        <span class="back-arrow">←</span>
+                        <span>Back to Search</span>
+                    </button>
+                    <h2 id="results-title">Select a Title</h2>
                 </div>
+                <p class="results-subtitle" id="results-count"></p>
                 
-                <div class="form-actions">
-                    <button type="button" class="btn-cancel" id="cancel-submit">Cancel</button>
-                    <button type="button" class="btn-search" id="search-omdb-btn">Search OMDB</button>
-                </div>
-                
-                <div id="omdb-results" class="omdb-results" style="display: none;">
-                    <h3>Select a title to add:</h3>
+                <div id="omdb-results" class="omdb-results">
                     <div id="results-grid" class="results-grid"></div>
+                    <p class="submit-status" id="results-status" style="display: none;"></p>
                     <button type="button" class="btn-confirm" id="confirm-selection-btn" disabled>Confirm Selection</button>
                 </div>
-                
-                <p class="submit-status" id="submit-status" style="display: none;"></p>
-            </form>
+            </div>
+                </div>
+            </div>
         </div>
     </div>
 
-    <!-- Scroll to Top Button -->
-    <button id="scroll-to-top" class="scroll-to-top" title="Back to top">
-        ↑
+    <!-- Floating Add Title Button -->
+    <button id="add-title-btn" class="add-title-btn-floating" style="display: none;" title="Submit a new title">
+        +
     </button>
 
     <script src="js/db-service.js"></script>
